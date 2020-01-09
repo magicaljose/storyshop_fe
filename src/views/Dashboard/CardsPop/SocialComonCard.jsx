@@ -23,6 +23,7 @@ const BlackList = [
 
 class SocialComonCard extends React.Component {
 	state = {
+		showAppearances: {}
 	}
 
 	componentDidMount = () => {
@@ -37,12 +38,12 @@ class SocialComonCard extends React.Component {
 
 		if (!builder_id || !world_id || !series_id || !season_id || !whichCard) return;
 
-		window.open(`http://demodemo.cf:3000/portalbuilder-cards/${builder_id}?forcard=${whichCard}&forworld=${world_id}&forseries=${series_id}&forbook=${season_id}`, '', 'width=950,height=650,left=200,top=00');
+		window.open(`https://app.storyshop.io/portalbuilder-cards/${builder_id}?forcard=${whichCard}&forworld=${world_id}&forseries=${series_id}&forbook=${season_id}`, '', 'width=950,height=650,left=200,top=00');
 	}
 
 	onFilesChange = files => {
 		const item = files[0];
-		
+
 		if (!item) return
 
 		const storage_ref = dbStorage.ref();
@@ -72,10 +73,22 @@ class SocialComonCard extends React.Component {
 	    console.log("Error " + error.code);
 	  }
 
+	  toggleAppearance = (season_id) => {
+		this.setState(prevState => ({
+			...prevState,
+			showAppearances: {
+				...prevState.showAppearances,
+				[season_id]: !prevState.showAppearances[season_id]
+			}
+		}))
+	}
+
 	render() {
 		const {
 			builder_id, charFields, fields, enableCardEdit, disableTearup, whichCard, writeAccess
 		} = this.props;
+
+		const { showAppearances } = this.state;
 
 		let backgroundStyles = {
 	        "backgroundColor": `#acc7d8`
@@ -101,34 +114,36 @@ class SocialComonCard extends React.Component {
 							fields && fields.name && fields.name.val
 						}
 					</div>
-					
+
 					<div className='btn-pr'>
 						<div style={{cursor: 'pointer'}} className='b1' onClick={() => enableCardEdit()}>
 							<i style={{height: '20px', width: '20px'}} className="fas fa-pencil-alt"></i>
+								<span className="fixed-hov-ob">Edit Card</span>
 						</div>
-						
+
 						{
 							disableTearup ? (
 								<div className='b2'></div>
 							) : (
 								<div className='b2' onClick={this.openPortal}>
 									<img style={{height: '20px', width: '20px'}} src={tearup_img} alt="tearup" />
+										<span className="fixed-hov-ob">Pop Out as New Window</span>
 								</div>
 							)
 						}
 					</div>
 				</section>
-				<section className='prt-prf' style={backgroundStyles}>					
+				<section className='prt-prf' style={backgroundStyles}>
 					<div className='frt-prf'>
 						<div className='prf-crl'>
 							{
-								fields && fields.photo && fields.photo.has && fields.photo.val && fields.photo.val[0] ? (
+								fields && fields.cardAvatar && fields.cardAvatar ? (
 									<img className='prf-avtr' style={
 										{height: '150px', width: '150px', borderRadius: '150px'}
 									} src={
-										fields.photo.val && fields.photo.val[0] && fields.photo.val[0].url
+										fields.cardAvatar.url
 									} alt={
-										fields.photo.val && fields.photo.val[0] && fields.photo.val[0].name
+										fields.cardAvatar.name
 									} onError={this.onImageError} />
 								) : (
 									<img className='prf-avtr' style={
@@ -136,7 +151,7 @@ class SocialComonCard extends React.Component {
 									} src={defaultPP} alt="Social Profile Picture" />
 								)
 							}
-							
+
 						</div>
 
 						{writeAccess && (<Files
@@ -150,15 +165,17 @@ class SocialComonCard extends React.Component {
 	        				multiple={false}
 	        			>
 	        				<img src={upload_background} alt="Change Background Image" />
+									<span className="fixed-hov-ob">Add/Change Background Image</span>
         				</Files>)}
+
 					</div>
 				</section>
-				
+
 				{/*<Scrollbars autoHide autoHideDuration={200} >*/}
 				{/*<Scrollbars className='cmn-wb-crd prt-dtl' style={{height: '280px'}} autoHide autoHideDuration={200} >*/}
 				{
 					!BlackList.includes(whichCard) && (
-						<section className='cmn-sec p1-dt'>	
+						<section className='cmn-sec p1-dt'>
 							{
 								fields && fields.start && fields.start.has && (
 									<div className='cmn-itm itm3'>
@@ -208,11 +225,11 @@ class SocialComonCard extends React.Component {
 						<div className='itm-vll'>
 							{
 								fields && fields.realAliases && fields.realAliases.tags.map(alias => `"${alias}" `)
-							}	
+							}
 						</div>
 					</div>
 				</section>
-				
+
 				<section className='cmn-pdd cmn-sec p2-2-dt'>
 					<div className='cmn-grp'>
 						<label className='cmn-clr-sz'>Tags</label>
@@ -220,7 +237,7 @@ class SocialComonCard extends React.Component {
 						<div className='itm-vll'>
 							{
 								fields && fields.aliases && fields.aliases.tags.map(alias => `"${alias}" `)
-							}	
+							}
 						</div>
 					</div>
 				</section>
@@ -341,20 +358,20 @@ class SocialComonCard extends React.Component {
 												<div key={index_key} className='rl-bx'>
 													<div className='cmn-prsn prsn1'>
 														{
-															card2 && card2.photo && card2.photo.has && card2.photo.val && card2.photo.val[0] ? (
+															card2 && card2.cardAvatar ? (
 																<img style={{
 																	height: '50px', width: '50px', borderRadius: '50px'
 																  }} className='prsn-pp' src={
-																	card2.photo.val && card2.photo.val[0] && card2.photo.val[0].url
+																	card2 && card2.cardAvatar.url
 																} alt={
-																	card2.photo.val && card2.photo.val[0] && card2.photo.val[0].name
+																	card2 && card2.cardAvatar.name
 																} onError={this.onImageError} />
 															) : (
 																<Avatar size="50px" style={{
 																	height: '50px', width: '50px', borderRadius: '50px'
-																  }} className='prf-avtr' 
-																  name={card2 && card2.name && card2.name.val} 
-																  round={true} 
+																  }} className='prf-avtr'
+																  name={card2 && card2.name && card2.name.val}
+																  round={true}
 																/>
 															)
 														}
@@ -369,20 +386,20 @@ class SocialComonCard extends React.Component {
 
 													<div className='cmn-prsn prsn2'>
 														{
-															card1 && card1.photo && card1.photo.has && card1.photo.val && card1.photo.val[0] ? (
+															card1 && card1.cardAvatar ? (
 																<img style={{
 																	height: '50px', width: '50px', borderRadius: '50px'
 																  }} className='prsn-pp' src={
-																	card1.photo.val && card1.photo.val[0] && card1.photo.val[0].url
+																	card1 && card1.cardAvatar.url
 																} alt={
-																	card1.photo.val && card1.photo.val[0] && card1.photo.val[0].name
+																	card1 && card1.cardAvatar.name
 																} onError={this.onImageError} />
 															) : (
 																<Avatar size="50px" style={{
 																	height: '50px', width: '50px', borderRadius: '50px'
-																  }} className='prf-avtr' 
-																  name={fields && fields.name && fields.name.val} 
-																  round={true} 
+																  }} className='prf-avtr'
+																  name={fields && fields.name && fields.name.val}
+																  round={true}
 																/>
 															)
 														}
@@ -399,26 +416,47 @@ class SocialComonCard extends React.Component {
 				}
 
 				{
-					fields && fields.appearance && (
-						<section className='cmn-pdd cmn-sec p8-dt'>
-							<div className='cmn-grp'>
-								<label className='cmn-clr-sz'>Appearances</label>
+						fields && fields.worldAppearance && (
+							<section className='cmn-pdd cmn-sec p8-dt'>
+								<div className='cmn-grp'>
+									<label className='cmn-clr-sz'>Appearances</label>
 
-								<div className='itm-vll'>
-									{fields.appearance.map( (appear, index_key) => {
-										return (
-											<div key={index_key} className='appear-br'>
-											  <div className='cmn-appr appear-app1'>{appear.episode_name}</div>
-											  -
-											  <div className='cmn-appr appear-app2'>{appear.scene_name}</div>
-											</div>
-										)
-									})}
+									{
+										Object.entries(fields.worldAppearance).map(([season_id, data]) => {
+											return (
+												<div className='main-app-vll'>
+													<div className='itm-vll main-ss' onClick={() => this.toggleAppearance(season_id)}>
+														<div key={season_id} className={`appear-br ${showAppearances[season_id] ? 'active' : ''}`}>
+															<div className='app-nm'>{data.season_name || "Book"}</div>
+															<div className='app-lng rnd'>{data.appearances.length}</div>
+														</div>
+													</div>
+
+													{
+														showAppearances[season_id] && (
+															<div className='itm-vll appear-itm'>
+																{data.appearances.map((appear, index_key) => {
+																	return (
+																		<div key={index_key} className='appear-br'>
+																		  <div className='cmn-appr appear-app1'>{appear.episode_name}</div>
+																		  -
+																		  <div className='cmn-appr appear-app2'>{appear.scene_name}</div>
+																		  -
+																		  <div className='cmn-appr appear-app3'>{appear.text}</div>
+																		</div>
+																	)
+																})}
+															</div>
+														)
+													}													
+												</div>
+											)
+										})
+									}
 								</div>
-							</div>
-						</section>
-					)
-				}
+							</section>
+						)
+					}
 				{/*</Scrollbars>*/}
 			</div>
 		)

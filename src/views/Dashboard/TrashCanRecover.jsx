@@ -14,6 +14,7 @@ import expand_window from 'assets/img/icons/expand_window.png';
 import getQueries from 'queries/getQueries';
 import updateQueries from 'queries/updateQueries';
 import deleteQueries from 'queries/deleteQueries';
+import backendProcessQuery from 'queries/backendProcessQuery';
 
 class TrashCanRecover extends React.Component{
 	state = {
@@ -80,6 +81,8 @@ class TrashCanRecover extends React.Component{
 							});
 
 							this.setState({ loading: false });
+						} else {
+							this.setState({ loading: false });
 						}
 					}
 				}
@@ -89,7 +92,7 @@ class TrashCanRecover extends React.Component{
 		}
 	}
 
-	makeCharFields = (fields) => { 
+	makeCharFields = (fields) => {
 	      let obj = {};
 
 	      fields.name ? obj['name'] = { has: true, val: fields.name } : obj['name'] = { has: false, val: "" };
@@ -128,16 +131,19 @@ class TrashCanRecover extends React.Component{
 
     restoreData = () => {
     	const { display_content } = this.state;
+    	const newFields = this.state.trash_content[display_content.type_id];
+    	const trash_item = this.state.trash_items[display_content.trash_id];
 
     	if (!display_content || !display_content.type) return;
 
     	if (display_content.type === "episode") {
     		updateQueries.updateEpisode(display_content.type_id, {isDeleted: false}, (err, res) => {});
+    		this.updateSeasonWordCount(trash_item.season_id, newFields.count);
     	} else if (display_content.type === "scene") {
+    		backendProcessQuery.updateScenesOrder(newFields.episode_id, display_content.type_id, newFields.sort);
     		updateQueries.updateScene(display_content.type_id, {isDeleted: false}, (err, res) => {});
+    		this.updateSeasonWordCount(trash_item.season_id, newFields.count);
     	} else if (display_content.type === "builder") {
-
-    		const newFields = this.state.trash_content[display_content.type_id];
     		appbaseRef.index({
 				type: "builders",
 				id: display_content.type_id,
@@ -152,10 +158,10 @@ class TrashCanRecover extends React.Component{
     	}
 
     	deleteQueries.removeTrash(display_content.trash_id, () => {});
-    	
+
     	/*updateQueries.updateTrash(display_content.trash_id, {
-    		isRestored: true, 
-    		restoredAt: new Date(), 
+    		isRestored: true,
+    		restoredAt: new Date(),
     		restoreTimestamp: new Date().getTime()
     	}, (err, res) => {});*/
 
@@ -165,13 +171,27 @@ class TrashCanRecover extends React.Component{
     	this.setState({ display_content: {}, trash_items });
     }
 
+    updateSeasonWordCount = (season_id, addCount) => {
+    	getQueries.getSeasonWordCountDoc(season_id, (err, res) => {
+    		if (err) {
+    			console.log(err);
+    		} else {
+    			if (res.status === 1) {
+    				const newCount = parseInt(res.data.count) + parseInt(addCount);
+
+    				updateQueries.updateSeasonWordCount(season_id, {count: newCount}, (e, r) => {});
+    			}
+    		}
+    	});
+    }
+
 	changeTrashContent = (type, trash_id, type_id) => {
 		this.setState({ display_content: {type, trash_id, type_id} });
 	}
 
 	chapterBox = (id, data, trash_id) => {
 		return (
-			<div key={id} className='episode-summary trsh-x' 
+			<div key={id} className='episode-summary trsh-x'
 			onClick={() => this.changeTrashContent("episode", trash_id, id)}>
 				<div className="prnt-b">
 					<div className="beat-episode">{data.name}</div>
@@ -251,8 +271,12 @@ class TrashCanRecover extends React.Component{
 
 				<div className='main-content'>
 					<div className='bx-hd'>
-						<h2 className='chp-nm'>{data.name}</h2>
-						<span className='cnt'>{data.count}</span>
+
+							<h2 className='chp-nm'>{data.name}</h2>
+              <span className='cnt'>{data.count || 0} WORDS</span>
+
+
+
 					</div>
 					<div className='bx-dttl'>
 						<div className='grp-rw'>
@@ -280,22 +304,24 @@ class TrashCanRecover extends React.Component{
 
 				<div className='main-content'>
 					<div className='bx-hd'>
-						<h2 className='chp-nm'>{data.name}</h2>
-						
-						<span className='cnt'>{data.count}</span>
+             	<h2 className='chp-nm'>{data.name}</h2>
+						<span className='cnt'>{data.count || 0} WORDS</span>
+
+
+
 					</div>
-					
+
 					<div className='bx-dttl'>
 						<div className='grp-rw'>
 							<label className='cnt-lbl'>Pulse</label>
 							<p>{data.pulse}</p>
 						</div>
-						
+
 						<div className='grp-rw'>
 							<label className='cnt-lbl'>Summary</label>
 							<p>{data.summary}</p>
 						</div>
-						
+
 						<div className='grp-rw'>
 							<label className='cnt-lbl'>Story</label>
 							<div className='st-dv' dangerouslySetInnerHTML={ {__html: data.story} } />
@@ -323,7 +349,7 @@ class TrashCanRecover extends React.Component{
 				season_id={season_id}
 			/>
 		} else {
-			cnt = <SocialComonCard 
+			cnt = <SocialComonCard
 				fields={fields}
 				writeAccess={false}
 				enableCardEdit={() => {}} whichCard={data.category}
@@ -348,21 +374,27 @@ class TrashCanRecover extends React.Component{
 			</div>
 		)
 	}
+	closeModal = () => {
+		this.setState({ open: false });
+	}
 
   	render() {
-		const { 
+		const {
 			open, closeModal
 		} = this.props;
 
-		const { 
+		const {
 			trash_items, loading, trash_content, display_content
 		} = this.state;
 
 		if (loading) {
 			return (
-				<center>
-					<img src={loadingGF} alt="loading..." />
-				</center>
+				<Popup open={open} className='trasg-pop prin-popup' onClose={() => closeModal()} modal closeOnDocumentClick >
+
+             <img src={loadingGF} alt="loading..." />
+
+
+				</Popup>
 			)
 		}
 
@@ -381,42 +413,54 @@ class TrashCanRecover extends React.Component{
 		}
 
     	return (
-			<Popup open={open} className='trasg-pop prin-popup' onClose={() => closeModal()} modal closeOnDocumentClick >
+				<Popup open={open} className='trasg-pop prin-popup' onClose={() => closeModal()} modal closeOnDocumentClick >
 				<div className="lists trash-lists">
+				<div className='right-corner-bx'>
+					<div className='cmn-bx cls-tn' style={{cursor: 'pointer'}} onClick={closeModal}>
+						<i className="fa fa-times close-tb"></i>
+                  
+					</div>
+				</div>
 		      		<h3 className='trash-hd'>Recover Trash Can</h3>
-			  		
-			  		<div className='prn_intgrt trash-integr'>			  
+
+
+			  		<div className='prn_intgrt trash-integr'>
 			  		  	<Scrollbars className='prn-writer cc-trash' autoHide autoHideDuration={200}>
 					    	<div className='prn_items custm-trash'>
+
+
 					    		{
-					    			Object.entries(trash_items).length > 0 ? 
+					    			Object.entries(trash_items).length > 0 ?
 					    			Object.entries(trash_items)
 					    			.map(([t_id, t_data]) => {
 					    				if (t_data.type === "episode") {
 					    					const data = trash_content[t_data.type_id];
-					    					if (!data)return;
+					    					if (!data) return;
 
 					    					return this.chapterBox(t_data.type_id, data, t_id)
 					    				} else if (t_data.type === "scene") {
 					    					const data = trash_content[t_data.type_id];
-					    					if (!data)return;
+					    					if (!data) return;
+
+					    					if (trash_content[t_data.episode_id]) return;
 
 					    					return this.sceneBox(t_data.type_id, data, t_id)
-					    				} else {
+					    				}else {
 					    					const data = trash_content[t_data.type_id];
-					    					if (!data)return;
+
+					    					if (!data) return;
 
 					    					return this.cardBox(t_data.type_id, data, t_id)
 					    				}
-					    			}) : <h4 className='txt-msg-sm'>There is no item!</h4>
-					    		}
+										}) :<h4 className='txt-msg-sm'>There is no item!</h4>
+					    	}
 					  		</div>
 			  			</Scrollbars>
-			 
+
 			 			<div className='prn_content trash-content'>
 			 				<Scrollbars className='prn-writer cc-trash' autoHide autoHideDuration={200}>
 			 					<div className='custm-trash-cntnt'>
-			 						{t_content}
+			 					 {t_content}
 			 					</div>
 			 				</Scrollbars>
 			  			</div>

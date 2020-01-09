@@ -193,9 +193,19 @@ class BeatBar extends React.Component {
 
 												<Droppable droppableId={deleteEpi} type={episodeType} ignoreContainerClipping={true} >
 												  {(provided, snapshot) => {
+												  		let style = {
+												  			visibility: 'hidden'
+												  		}
+
+												  		if (this.props.state[`${seasonKey}BeatDelete`]) {
+												  			style = {
+												  				visibility: 'unset'
+												  			}
+												  		}
+
 														return (
 															<div ref={provided.innerRef} className='aln-beat-dlt'
-																style={seasonExpanded === seasonKey ? {"zIndex": "999"} : {"zIndex": "99"}}
+																style={seasonExpanded === seasonKey ? {zIndex: "999", ...style} : {zIndex: "99", ...style}}
 																{...provided.droppableProps} >
 																{this.props.state[`${seasonKey}BeatDelete`] && (
 																	<img alt="delete" src={getDeleteSrc(snapshot.isDraggingOver)} />
@@ -320,9 +330,19 @@ class BeatBar extends React.Component {
 
 												<Droppable droppableId={deleteScene} type={sceneType} ignoreContainerClipping={true} >
 												  {(provided, snapshot) => {
+												  		let style = {
+												  			visibility: 'hidden'
+												  		}
+
+												  		if (this.props.state[`${seasonKey}SceneBeatDelete`]) {
+												  			style = {
+												  				visibility: 'unset'
+												  			}
+												  		}
+
 														return (
 															<div ref={provided.innerRef} className='aln-beat-dlt'
-																style={snapshot.isDraggingOver ? {"zIndex": "995"} : {"zIndex": "99"}}
+																style={snapshot.isDraggingOver ? {zIndex: "995", ...style} : {zIndex: "99", ...style}}
 																{...provided.droppableProps} >
 																{this.props.state[`${seasonKey}SceneBeatDelete`] && (
 																	<img alt="delete" src={getDeleteSrc(snapshot.isDraggingOver)} />
@@ -342,7 +362,13 @@ class BeatBar extends React.Component {
 					  })}
 					  {provided.placeholder}
 						<div className='aln-cntr'>
-							{writeAccess && (<Fab className='bt-new-btn' color="primary" aria-label="Add" onClick={appendNewEpisode}><AddIcon /></Fab>) }
+							{writeAccess && (
+								<Fab className='bt-new-btn' color="primary" aria-label="Add" 
+								onClick={appendNewEpisode}>
+									<AddIcon />
+									<span className="fixed-hov-ob">Add Episode</span>
+								</Fab>
+							) }
 						</div>
 					</div>
 				)
@@ -445,7 +471,13 @@ class BeatBar extends React.Component {
 					  })}
 						{sceneProvided.placeholder}
 						<div className='aln-cntr'>
-							{writeAccess && (<Fab className='bt-new-btn ltl-grn' color="primary" aria-label="Add" onClick={() => appendNewScene(episodeKey)}><AddIcon /></Fab>) }
+							{writeAccess && (
+								<Fab className='bt-new-btn ltl-grn' color="primary" aria-label="Add" 
+								onClick={() => appendNewScene(episodeKey)}>
+									<AddIcon />
+									<span className="fixed-hov-ob">Add Scene</span>
+								</Fab>
+							) }
 						</div>
 
 					</div>
@@ -535,6 +567,16 @@ class BeatBar extends React.Component {
 			)
 		}
 
+		let style = {
+	  		visibility: 'hidden'
+	  	}
+
+	  	if (this.props.state[`seasonBeatDelete`]) {
+	  		style = {
+	  			visibility: 'unset'
+	  		}
+	  	}
+
 		return (
 				<div className='left-pad-content'>
 					<div className='icn-beat-mode' onClick={() => handleBeatMode("beatMode", true)}>
@@ -594,16 +636,17 @@ class BeatBar extends React.Component {
 
 					<Droppable droppableId="delete season" type="season season" ignoreContainerClipping={true} >
 					  {(provided, snapshot) => {
-						return (
-							<div ref={provided.innerRef} className='aln-beat-dlt'>
+					  	return (
+							<div ref={provided.innerRef} className='aln-beat-dlt' style={style}>
 								{this.props.state[`seasonBeatDelete`] && (
 									<img alt="delete" src={getDeleteSrc(snapshot.isDraggingOver)} />
 								)}
-
 							</div>
 						)
 					  }}
 					</Droppable>
+
+					
 
 					{/*}<Droppable droppableId="delete episode" type="episode episode" ignoreContainerClipping={true} >
 					  {(provided, snapshot) => {

@@ -131,12 +131,12 @@ class Seasons extends React.Component {
   							}
   						}
 
-  						getQueries.getWorldWithDoc(wid, cb); 
-  					});	
+  						getQueries.getWorldWithDoc(wid, cb);
+  					});
 
-  					this.setState({ access_world_list });				
+  					this.setState({ access_world_list });
   				} else {
-  					this.setState({ 
+  					this.setState({
   						access_world_list: []
   					});
   				}
@@ -216,7 +216,7 @@ class Seasons extends React.Component {
 
 		            results.data.forEach(snap => {
 		                let obj = snap.data();
-		                
+
 		                obj['key'] = snap.id;
 		                obj['world_id'] = world_id;
 
@@ -224,12 +224,12 @@ class Seasons extends React.Component {
 		            });
 
 		            this.setState({
-		            	defaultSeasonDatabase: seasonDatabase, 
+		            	defaultSeasonDatabase: seasonDatabase,
 		            	seasonDatabase, world_id
 		            });
 	    		} else {
 	    			this.setState({
-		            	defaultSeasonDatabase: [], 
+		            	defaultSeasonDatabase: [],
 		            	seasonDatabase: [], world_id
 		            });
 	    		}
@@ -243,8 +243,8 @@ class Seasons extends React.Component {
 	    		console.log(error);
 	    	} else {
 	    		if (result.status === 1) {
-	    			this.setState({ 
-	    				world_name: result.data.name 
+	    			this.setState({
+	    				world_name: result.data.name
 	    			});
 	    		}
 	    	}
@@ -345,9 +345,9 @@ class Seasons extends React.Component {
   	}
 
   	render() {
-	  	const { 
+	  	const {
 	  		world_name, seasonDatabase, world_list, writeAccess, secondFilter,
-		    thirdFilter, notHis, access_world_list 
+		    thirdFilter, notHis, access_world_list
 		} = this.state;
 
     	if (!localStorage.getItem('storyShop_uid')) {
@@ -380,10 +380,10 @@ class Seasons extends React.Component {
 				      name="secondFilter"
 				      value={this.state.secondFilter}
 				      options={[
-					      {text: "All Roles", value: "All Roles"},
-					      {text: "Author", value: "Author"},
-					      {text: "Peer", value: "Peer"},
-					      {text: "World Owner", value: "World Owner"}
+					      {text: "All Roles", value: "All Roles", id: "roll", label: "View All Books"},
+					      {text: "Author", value: "Author", id: "auth", label: "View Your Books"},
+					      {text: "Peer", value: "Peer", id: "peer", label: "View your Collaborators Books"},
+					      {text: "World Owner", value: "World Owner", id: "wown", label: "View Books in the Worlds You Own"}
 				      ]}
 				      onChange={this.handleDropChange}
 				    />
@@ -396,7 +396,6 @@ class Seasons extends React.Component {
 				      name="thirdFilter"
 				      value={this.state.thirdFilter}
 				      options={[
-					      {text: "Last Updated", value: "Last Updated"},
 					      {text: "Newest", value: "Newest"},
 					      {text: "Oldest", value: "Oldest"}
 				      ]}
@@ -418,18 +417,20 @@ class Seasons extends React.Component {
                  					<div key={index_key} className="inner_main_grds">
 					         			<div className="laye_r">
                      						<img className="res_pon" alt="Season" src={season.img ? season.img : def} />
-						         			
+
+
 						         			<span>
 						           				<Writer season_id={season.key} write={writeAccess} notHis={notHis}
 						           				  access_world_list={access_world_list}
 								       			  world_list={world_list}/>
 
-							         			<Link className="" to={`/${season.world_id}/${season.series_id}/${season.key}`}>
+							         			<Link className="main_grds1" to={`/${season.world_id}/${season.series_id}/${season.key}`}>
 								          			<img className="img_pop edit_s" alt="Edit with Publisher" src={Edit}/>
+                               <span className="fixed-hov-ob">Open Book in Writer</span>
 							          			</Link>
 						         			</span>
 						       			</div>
-						       			
+
 						       			<h2 className='cmn-hd-cl'>{season.name}</h2>
                  					</div>
                					)

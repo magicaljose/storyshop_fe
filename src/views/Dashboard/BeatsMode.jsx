@@ -18,6 +18,7 @@ import MenuItem from 'material-ui/Menu/MenuItem';
 ///////////// Local Files ////////////
 import NotesPop from './NotesPop.jsx';
 import SelectPov from './SelectPov.jsx';
+import worldBuilders from '../worldBuilders.js';
 //////////////////////////////////////
 
 /////////////////////////// Images //////////////////////////
@@ -35,8 +36,8 @@ import chapter_selected_img from 'assets/img/icons/chapterview_selected.png';
 import chapter_unselected_img from 'assets/img/icons/chapterview_unselected.png';
 import summary_selected_img from 'assets/img/icons/summary_view_selected.png';
 import summary_unselected_img from 'assets/img/icons/summary_view_unselected.png';
-import pov_view_selected from 'assets/img/icons/pov_view_selected.png';
-import pov_view_unselected from 'assets/img/icons/pov_view_unselected.png';
+import pov_view_selected from 'assets/img/icons/pov_view_selected.jpg';
+import pov_view_unselected from 'assets/img/icons/pov_view_unselected.jpg';
 /////////////////////////////////////////////////////////////
 
 /////// Autosize Textarea //////
@@ -103,6 +104,7 @@ class BeatsMode extends React.Component {
 		povFields: {},
 		povPopData: {},
 		povExpndLst: {},
+		settings: {},
 	}
 	state = {
 		setting_pop: false,
@@ -121,7 +123,8 @@ class BeatsMode extends React.Component {
 		addPovOpen: false,
 		povFields: {},
 		povPopData: {},
-		povExpndLst: {}
+		povExpndLst: {},
+		settings: {}
 	}
 
 	componentWillMount = () => {
@@ -180,6 +183,10 @@ class BeatsMode extends React.Component {
 		if (this.getJSONStringify(nextProps.expandButtons) !== this.getJSONStringify(this.props.expandButtons)) {
 			return true
 		}
+
+		/*if (this.getJSONStringify(nextProps.charFields) !== this.getJSONStringify(this.props.charFields)) {
+			return true
+		}*/
 
 		return false
 	}
@@ -311,29 +318,79 @@ class BeatsMode extends React.Component {
 	  		} else {
 				if (results.data.docs.length > 0) {
 					results.data.docChanges().forEach(change => {
-						if (change.type === "modified") {
-							if (change.doc.data().isDeleted) {
-								return;
-							} else if (change.doc.data().isDeleted === false) {
-							} else {
-								this.setState(prevState => ({
-									...prevState,
-									beatsData: {
-		    							...prevState.beatsData,
-		    							[change.doc.id]: {
-		    								...prevState.beatsData[change.doc.id],
-		    								count: change.doc.data().count || 0,
-		    								pulse: change.doc.data().pulse || "",
-		    								name: change.doc.data().name || "",
-		    								summary: change.doc.data().summary || "",
-		    								sort: change.doc.data().sort || 0
-		    							}
-									}
-								}));
+						if (change.doc.data().isDeleted === true) return;
 
-								if (this.textareaRef && this.textareaRef[`summary-${change.doc.id}`]) {
-									autosize.destroy(this.textareaRef[`summary-${change.doc.id}`]);
-									autosize(this.textareaRef[`summary-${change.doc.id}`]);
+						if (change.type === "modified") {
+							if (!this.state.beatsData[change.doc.id] && change.doc.data().isDeleted === false) {
+							} else {
+								if (this.state.beatsData[change.doc.id].count !== change.doc.data().count) {
+									this.setState(prevState => ({
+										...prevState,
+										beatsData: {
+			    							...prevState.beatsData,
+			    							[change.doc.id]: {
+			    								...prevState.beatsData[change.doc.id],
+			    								count: change.doc.data().count || 0
+			    							}
+										}
+									}));
+								}
+
+								if (this.state.beatsData[change.doc.id].pulse !== change.doc.data().pulse) {
+									this.setState(prevState => ({
+										...prevState,
+										beatsData: {
+			    							...prevState.beatsData,
+			    							[change.doc.id]: {
+			    								...prevState.beatsData[change.doc.id],
+			    								pulse: change.doc.data().pulse || ""
+			    							}
+										}
+									}));
+								}
+
+								if (this.state.beatsData[change.doc.id].name !== change.doc.data().name) {
+									this.setState(prevState => ({
+										...prevState,
+										beatsData: {
+			    							...prevState.beatsData,
+			    							[change.doc.id]: {
+			    								...prevState.beatsData[change.doc.id],
+			    								name: change.doc.data().name || ""
+			    							}
+										}
+									}));
+								}
+
+								if (this.state.beatsData[change.doc.id].summary !== change.doc.data().summary) {
+									this.setState(prevState => ({
+										...prevState,
+										beatsData: {
+			    							...prevState.beatsData,
+			    							[change.doc.id]: {
+			    								...prevState.beatsData[change.doc.id],
+			    								summary: change.doc.data().summary || ""
+			    							}
+										}
+									}));
+
+									if (this.textareaRef && this.textareaRef[`summary-${change.doc.id}`]) {
+										autosize.destroy(this.textareaRef[`summary-${change.doc.id}`]);
+										autosize(this.textareaRef[`summary-${change.doc.id}`]);
+									}
+								}
+
+								if (this.state.beatsData[change.doc.id].sort !== change.doc.data().sort) {
+									this.setState(prevState => ({
+										...prevState,
+										beatsData: {
+			    							...prevState.beatsData,
+			    							[change.doc.id]: {
+			    								...prevState.beatsData[change.doc.id],
+			    								sort: change.doc.data().sort || 0
+			    							}
+										}
+									}));
 								}
 
 								return;
@@ -384,53 +441,116 @@ class BeatsMode extends React.Component {
 	  		} else {
 				if (results.data.docs.length > 0) {
 					results.data.docChanges().forEach(change => {
-						if (change.type === "modified") {
-							if (change.doc.data().isDeleted) {
-								let beatsData = this.state.beatsData;
+						if (change.doc.data().isDeleted === true) return;
 
-								delete beatsData[episode_id].scenes[change.doc.id];
-
-								return this.setState({ beatsData });
-							} else if (change.doc.data().isDeleted === false) {
-
+						if (change.type === "modified") {							
+							if (!this.state.beatsData[episode_id].scenes[change.doc.id] && change.doc.data().isDeleted === false) {
 							} else {
-								this.setState(prevState => ({
-									...prevState,
-									beatsData: {
-		    					    	...prevState.beatsData,
-										[episode_id]: {
-											...prevState.beatsData[episode_id],
-											scenes: {
-												...prevState.beatsData[episode_id].scenes,
-												[change.doc.id]: {
-													...prevState.beatsData[episode_id].scenes[change.doc.id],
-													count: change.doc.data().count || 0,
-				    								pulse: change.doc.data().pulse || "",
-				    								name: change.doc.data().name || "",
-				    								summary: change.doc.data().summary || "",
-				    								sort: change.doc.data().sort || 0
+								if (this.state.beatsData[episode_id].scenes[change.doc.id].count !== change.doc.data().count) {
+									this.setState(prevState => ({
+										...prevState,
+										beatsData: {
+			    					    	...prevState.beatsData,
+											[episode_id]: {
+												...prevState.beatsData[episode_id],
+												scenes: {
+													...prevState.beatsData[episode_id].scenes,
+													[change.doc.id]: {
+														...prevState.beatsData[episode_id].scenes[change.doc.id],
+														count: change.doc.data().count || 0
+													}
 												}
 											}
 										}
-									}
-								}));
+									}));
+								}
 
-								if (this.textareaRef && this.textareaRef[`summary-${change.doc.id}`]) {
-									autosize.destroy(this.textareaRef[`summary-${change.doc.id}`]);
-									autosize(this.textareaRef[`summary-${change.doc.id}`]);
+								if (this.state.beatsData[episode_id].scenes[change.doc.id].pulse !== change.doc.data().pulse) {
+									this.setState(prevState => ({
+										...prevState,
+										beatsData: {
+			    					    	...prevState.beatsData,
+											[episode_id]: {
+												...prevState.beatsData[episode_id],
+												scenes: {
+													...prevState.beatsData[episode_id].scenes,
+													[change.doc.id]: {
+														...prevState.beatsData[episode_id].scenes[change.doc.id],
+					    								pulse: change.doc.data().pulse || ""
+													}
+												}
+											}
+										}
+									}));
+								}
+
+								if (this.state.beatsData[episode_id].scenes[change.doc.id].name !== change.doc.data().name) {
+									this.setState(prevState => ({
+										...prevState,
+										beatsData: {
+			    					    	...prevState.beatsData,
+											[episode_id]: {
+												...prevState.beatsData[episode_id],
+												scenes: {
+													...prevState.beatsData[episode_id].scenes,
+													[change.doc.id]: {
+														...prevState.beatsData[episode_id].scenes[change.doc.id],
+					    								name: change.doc.data().name || ""
+													}
+												}
+											}
+										}
+									}));
+								}
+
+								if (this.state.beatsData[episode_id].scenes[change.doc.id].summary !== change.doc.data().summary) {
+									this.setState(prevState => ({
+										...prevState,
+										beatsData: {
+			    					    	...prevState.beatsData,
+											[episode_id]: {
+												...prevState.beatsData[episode_id],
+												scenes: {
+													...prevState.beatsData[episode_id].scenes,
+													[change.doc.id]: {
+														...prevState.beatsData[episode_id].scenes[change.doc.id],
+					    								summary: change.doc.data().summary || ""
+													}
+												}
+											}
+										}
+									}));
+
+									if (this.textareaRef && this.textareaRef[`summary-${change.doc.id}`]) {
+										autosize.destroy(this.textareaRef[`summary-${change.doc.id}`]);
+										autosize(this.textareaRef[`summary-${change.doc.id}`]);
+									}
+								}
+
+								if (this.state.beatsData[episode_id].scenes[change.doc.id].sort !== change.doc.data().sort) {
+									this.setState(prevState => ({
+										...prevState,
+										beatsData: {
+			    					    	...prevState.beatsData,
+											[episode_id]: {
+												...prevState.beatsData[episode_id],
+												scenes: {
+													...prevState.beatsData[episode_id].scenes,
+													[change.doc.id]: {
+														...prevState.beatsData[episode_id].scenes[change.doc.id],
+					    								sort: change.doc.data().sort || 0
+													}
+												}
+											}
+										}
+									}));
 								}
 
 								return;
 							}
 						}
 
-						if (change.type === "removed") {
-							let beatsData = this.state.beatsData;
-
-							delete beatsData[episode_id].scenes[change.doc.id];
-
-							return this.setState({ beatsData });
-						}
+						if (change.type === "removed") return;
 
 						const scene_id = change.doc.id;
 						let scenesData = change.doc.data();
@@ -575,6 +695,13 @@ class BeatsMode extends React.Component {
     			if (result.status === 1) {
     				let povId = Object.entries(result.data)[0][0];
 
+    				let povFields = this.state.beatsData[episode_id].povFields;
+
+    				if (this.state.beatsData[episode_id].scenes[scene_id].povField !== povId &&
+    				this.state.beatsData[episode_id].povFields[this.state.beatsData[episode_id].scenes[scene_id].povField]) {
+    					delete povFields[this.state.beatsData[episode_id].scenes[scene_id].povField];
+    				}
+
     				this.setState(prevState => ({
 						...prevState,
 						beatsData: {
@@ -582,7 +709,7 @@ class BeatsMode extends React.Component {
 							[episode_id]: {
 								...prevState.beatsData[episode_id],
 								povFields: {
-									...prevState.beatsData[episode_id].povFields,
+									...povFields,
 									[povId]: true
 								},
 								scenes: {
@@ -610,6 +737,8 @@ class BeatsMode extends React.Component {
     			if (result.status === 1) {
     				let povId = Object.entries(result.data)[0][0];
 
+    				this.getBuilderOfPov(povId);
+
     				this.setState(prevState => ({
 						...prevState,
 						beatsData: {
@@ -635,6 +764,26 @@ class BeatsMode extends React.Component {
     	}
 
     	this.getSettingPovs[scene_id] = realtimeGetQueries.getScenePovSetting(scene_id, callback);
+    }
+
+    getBuilderOfPov = (builder_id) => {
+    	const callback = (error, result) => {
+    		if (error) {
+    			console.log(error);
+    		} else {
+    			if (result.status === 1) {
+    				this.setState(prevState => ({
+    					...prevState,
+    					settings: {
+    						...prevState.settings,
+    						[builder_id]: result.data
+    					}
+    				}))
+    			}
+    		}
+    	}
+
+    	getQueries.getBuilderWithDoc(builder_id, callback);
     }
 
    	handleClickOutside = (event) => {
@@ -1039,17 +1188,18 @@ class BeatsMode extends React.Component {
 		const { season_id } = this.props;
 
 		if (scene_id) {
-			window.open(`http://demodemo.cf:3000/chapter-${episode_id}/${season_id}?portal=true&scene=${scene_id}`, '', 'width=850,height=250,left=200,top=200');
+			window.open(`https://app.storyshop.io/chapter-${episode_id}/${season_id}?portal=true&scene=${scene_id}`, '', 'width=850,height=250,left=200,top=200');
 		} else {
-			window.open(`http://demodemo.cf:3000/chapter-${episode_id}/${season_id}?portal=true`, '', 'width=850,height=250,left=200,top=200');
+			window.open(`https://app.storyshop.io/chapter-${episode_id}/${season_id}?portal=true`, '', 'width=850,height=250,left=200,top=200');
 		}
 	}
 
-	addPov = (episode_id, scene_id, fieldsOf) => {
+	addPov = (episode_id, scene_id, fieldsOf, selectedPov) => {
 		this.setState({
 			addPovOpen: true,
 			povPopData: {episode_id, scene_id},
-			povFieldsOf: fieldsOf
+			povFieldsOf: fieldsOf,
+			povFields: selectedPov ? {[selectedPov]:true} : {}
 		});
 	}
 
@@ -1085,7 +1235,7 @@ class BeatsMode extends React.Component {
 			return updateQueries.insertScenePov(povfor.scene_id, data, callback);
 		}
 
-		if (!settingFields[Object.entries(data)[0][0]]) return;
+		// if (!settingFields[Object.entries(data)[0][0]]) return;
 		updateQueries.insertScenePovSetting(povfor.scene_id, data, callback);
 	}
 
@@ -1136,20 +1286,20 @@ class BeatsMode extends React.Component {
 
 	getChapterBox(id, data, index) {
 		const { season_id, showOneSumm, showExpndOneSumm, expandButtons, summ_expand, writeAccess, charFields, settingFields } = this.props;
-		const { size, type, povExpndLst } = this.state;
+		const { size, type, povExpndLst, settings } = this.state;
 
 		let style = {
 			"fontFamily": type
 		}
 
-		let povContent;
+		/*let povContent;
 
 		if (data.povFields) {
 			let result = Object.entries(data.povFields).map(([povField, povVal]) => povVal === true)
 
 			console.log(result);
 			console.log(result.length)
-		}
+		}*/
 
 		return (
 			<div data-element={id} className='chp-bx'>
@@ -1206,6 +1356,7 @@ class BeatsMode extends React.Component {
 														<img src={chapter_selected_img} alt="BeatsModeimg..." />
 													)
 											}
+											<span className="fixed-hov-ob">Expand Beats Summary</span>
 										</button>
 
 										{
@@ -1265,13 +1416,14 @@ class BeatsMode extends React.Component {
                                                     <div className='rnd-cnt'></div>
                                                 )
                                             }
-																							<span className="fixed-hov-ob">Notes Board</span>
+											<span className="fixed-hov-ob">Notes Board</span>
 										</button>
 									</div>
 									<div className='cl13-fl'>
 										{ writeAccess && (
 											<button className='btn' onClick={() => this.openChapterWindow(id)}>
 												<img src={tearup_img} alt="BeatsModeimg..." />
+												<span className="fixed-hov-ob">Pop Out as New Window</span>
 											</button>
 										)}
 									</div>
@@ -1319,25 +1471,24 @@ class BeatsMode extends React.Component {
 									{
 										data.povFields && Object.entries(data.povFields)
 										.filter(([povField, povVal]) => povVal === true)
+										.slice(0, 2)
 										.map(([povField, povVal], index) => {
 											if (povVal) return (
 												<div key={index} className='crd-grp-cmn crds'>
 													{
-														charFields[povField] && charFields[povField].photo &&
-														charFields[povField].photo.has && charFields[povField].photo.val[0] ? (
+														charFields[povField] && charFields[povField].cardAvatar ? (
 															<img className='char-prf-avtr' style={
 																{height: '42px', width: '42px', borderRadius: '50%'}
 															} src={
-																charFields[povField].photo.val[0].url
+																charFields[povField].cardAvatar.url
 															} alt={
-																charFields[povField].photo.val[0].name
+																charFields[povField].cardAvatar.name
 															} />
 														) : (
 															<Avatar size="42px" style={
 																{height: '42px', width: '42px', borderRadius: '150px'}
 															} className='char-prf-avtr' name={charFields[povField] && charFields[povField].name.val} round={true} />
 														)
-
 													}
 												</div>
 											)
@@ -1359,13 +1510,20 @@ class BeatsMode extends React.Component {
 																	Object.entries(data.povFields).map(([povField, povVal], index) => (
 																		<FormControlLabel key={index}
 														                	control={
-														                  		<Checkbox
-														          					className="list_expnd-pv"
-														          					name="povFields"
-														          					checked={povVal}
-														                    		value={charFields[povField] && charFields[povField].name.val}
-														                  		/>
-														                	}
+																				charFields[povField] && charFields[povField].cardAvatar ? (
+																					<img className='char-prf-avtr' style={
+																						{height: '42px', width: '42px', borderRadius: '50%'}
+																					} src={
+																						charFields[povField].cardAvatar.url
+																					} alt={
+																						charFields[povField].cardAvatar.name
+																					} />
+																				) : (
+																					<Avatar size="42px" style={
+																						{height: '42px', width: '42px', borderRadius: '150px'}
+																					} className='char-prf-avtr' name={charFields[povField] && charFields[povField].name.val} round={true} />
+																				)
+																			}
 														                	label={charFields[povField] && charFields[povField].name.val}
 														        			className="list_lbl list_expnd-pv"
 														        			labelPlacement="start"
@@ -1386,38 +1544,34 @@ class BeatsMode extends React.Component {
 								<div className='cmn-prt cmn-hd-cl'>Cast:</div>
 								<div className='cmn-prt crd-grp'>
 									{
-										data.povFields && Object.entries(data.povFields)
-										.map(([povField, povVal], index) => {
-											return charFields[povField].relation.val &&
-											Object.entries(charFields[povField].relation.val)
-											.map(([key, relation], index_key) => {
-												if (relation.type.toLowerCase() !== "character") return;
+										Object.entries(charFields)
+										.map(([char_id, card], index_key) => {
+											if (!card.appearance) return;
 
-												const card1 = charFields[relation.charId];
+											const found = card.appearance.find(element => element.episode_id === id);
 
-												if (!card1) return;
+											if (!found) return;
 
-												return (
-													<div key={index_key} className='crd-grp-cmn crds'>
-														{
-															card1 && card1.photo && card1.photo.has && card1.photo.val && card1.photo.val[0] ? (
-																<img className='char-prf-avtr' style={
-																	{height: '42px', width: '42px', borderRadius: '50%'}
-																} src={
-																	card1.photo.val && card1.photo.val[0] && card1.photo.val[0].url
-																} alt={
-																	card1.photo.val && card1.photo.val[0] && card1.photo.val[0].name
-																} />
-															) : (
-																<Avatar size="42px" style={
-																	{height: '42px', width: '42px', borderRadius: '150px'}
-																} className='char-prf-avtr' name={card1 && card1.name && card1.name.val} round={true} />
-															)
+											return (
+												<div key={index_key} className='crd-grp-cmn crds'>
+													{
+														card && card.cardAvatar ? (
+															<img className='char-prf-avtr' style={
+																{height: '42px', width: '42px', borderRadius: '50%'}
+															} src={
+																card && card.cardAvatar && card.cardAvatar.url
+															} alt={
+																card && card.cardAvatar && card.cardAvatar.name
+															} />
+														) : (
+															<Avatar size="42px" style={
+																{height: '42px', width: '42px', borderRadius: '150px'}
+															} className='char-prf-avtr' name={card && card.name && card.name.val} round={true} />
+														)
 
-														}
-													</div>
-												)
-											})
+													}
+												</div>
+											)
 										})
 									}
 								</div>
@@ -1425,26 +1579,25 @@ class BeatsMode extends React.Component {
 
 							<div className='cmn-grp set-grp'>
 								<div className='cmn-prt cmn-hd-cl'>Settings:</div>
-								<div className='cmn-prt crd-grp'>
+								<div className='cmn-prt crd-grp ext'>
 									{
 										data.settingsFields && Object.entries(data.settingsFields)
 										.slice(0, 2)
 										.map(([povField, povVal], index) => (
 											<div key={index} className='crd-grp-cmn crds'>
 												{
-													settingFields[povField] && settingFields[povField].photo &&
-													settingFields[povField].photo.has && settingFields[povField].photo.val[0] ? (
+													settings[povField] && settings[povField].cardAvatar ? (
 														<img className='char-prf-avtr' style={
 															{height: '42px', width: '42px', borderRadius: '50%'}
 														} src={
-															settingFields[povField].photo.val[0].url
+															settings[povField].cardAvatar.url
 														} alt={
-															settingFields[povField].photo.val[0].name
+															settings[povField].cardAvatar.name
 														} />
 													) : (
 														<Avatar size="42px" style={
 															{height: '42px', width: '42px', borderRadius: '150px'}
-														} className='char-prf-avtr' name={settingFields[povField] && settingFields[povField].name.val} round={true} />
+														} className='char-prf-avtr' name={settings[povField] && settings[povField].name} round={true} />
 													)
 
 												}
@@ -1467,14 +1620,26 @@ class BeatsMode extends React.Component {
 																	Object.entries(data.settingsFields).map(([povField, povVal], index) => (
 																		<FormControlLabel key={index}
 														                	control={
-														                  		<Checkbox
-														          					className="list_expnd-pv"
-														          					name="settingsFields"
-														          					checked={povVal}
-														                    		value={settingFields[povField] && settingFields[povField].name.val}
-														                  		/>
+																				settings[povField] && settings[povField].cardAvatar ? (
+																					<img className='char-prf-avtr' style={
+																						{height: '42px', width: '42px', borderRadius: '50%'}
+																					} src={
+																						settings[povField].cardAvatar.url
+																					} alt={
+																						settings[povField].cardAvatar.name
+																					} />
+																				) : (
+																					<Avatar size="42px" style={
+																						{height: '42px', width: '42px', borderRadius: '150px'}
+																					} className='char-prf-avtr' name={settings[povField] && settings[povField].name} round={true} />
+																				)
+
+																			}
+														                	label={
+														                		<div>
+														                			<span>{settings[povField] && settings[povField].name}</span>
+														                		</div>
 														                	}
-														                	label={settingFields[povField] && settingFields[povField].name.val}
 														        			className="list_lbl list_expnd-pv"
 														        			labelPlacement="start"
 														              	/>
@@ -1534,9 +1699,9 @@ class BeatsMode extends React.Component {
 	getSceneBox(key, episode_id, scene_id, data) {
 		const {
 			season_id, showOneSumm, showExpndOneSumm, expandButtons, summ_expand,
-			writeAccess, charFields, settingFields
+			writeAccess, charFields, settingFields, povExpndLst
 		} = this.props;
-		const { size, type } = this.state;
+		const { size, type, settings } = this.state;
 
 		let style = {
 			"fontFamily": type
@@ -1588,6 +1753,7 @@ class BeatsMode extends React.Component {
 														<img src={chapter_selected_img} alt="BeatsModeimg..." />
 													)
 											}
+											<span className="fixed-hov-ob">Expand Beats Summary</span>
 										</button>
 
 										{
@@ -1646,13 +1812,16 @@ class BeatsMode extends React.Component {
                                                     <div className='rnd-cnt'></div>
                                                 )
                                             }
-																							<span className="fixed-hov-ob">Notes Board</span>
+											<span className="fixed-hov-ob">Notes Board</span>
 										</button>
 									</div>
 
 									{writeAccess && (
 										<div className='cl13-fl' onClick={() => this.openChapterWindow(episode_id, scene_id)}>
-											<button className='btn'><img src={tearup_img} alt="BeatsModeimg..." /></button>
+											<button className='btn'>
+												<img src={tearup_img} alt="BeatsModeimg..." />
+												<span className="fixed-hov-ob">Pop Out as New Window</span>
+											</button>
 										</div>
 									)}
 
@@ -1698,16 +1867,17 @@ class BeatsMode extends React.Component {
 								<div className='cmn-prt crd-grp'>
 									{
 										data.povField && (
-											<div className='crd-grp-cmn crds'>
+											<div className='crd-grp-cmn crds'
+											onClick={() => {if (writeAccess) this.addPov(episode_id, scene_id, "pov", data.povField)}}
+											>
 												{
-													charFields[data.povField] && charFields[data.povField].photo &&
-													charFields[data.povField].photo.has && charFields[data.povField].photo.val[0] ? (
+													charFields && charFields[data.povField] && charFields[data.povField].cardAvatar ? (
 														<img className='char-prf-avtr' style={
 															{height: '47px', width: '47px', borderRadius: '50%'}
 														} src={
-															charFields[data.povField].photo.val[0].url
+															charFields[data.povField].cardAvatar.url
 														} alt={
-															charFields[data.povField].photo.val[0].name
+															charFields[data.povField].cardAvatar.name
 														} />
 													) : (
 														<Avatar size="47px" style={
@@ -1734,32 +1904,30 @@ class BeatsMode extends React.Component {
 								<div className='cmn-prt cmn-hd-cl'>Cast:</div>
 								<div className='cmn-prt crd-grp'>
 									{
-										data.povField && charFields[data.povField].relation.val &&
-										 Object.entries(charFields[data.povField].relation.val)
-										 .map(([key, relation], index_key) => {
-											if (relation.type.toLowerCase() !== "character") return;
+										Object.entries(charFields)
+										.map(([char_id, char], index_key) => {
+											if (!char.appearance) return;
 
-											const card1 = charFields[relation.charId];
+											const found = char.appearance.find(element => element.scene_id === scene_id);
 
-											if (!card1) return;
+											if (!found) return;
 
 											return (
 												<div key={index_key} className='crd-grp-cmn crds'>
 													{
-														card1 && card1.photo && card1.photo.has && card1.photo.val && card1.photo.val[0] ? (
+														char.cardAvatar ? (
 															<img className='char-prf-avtr' style={
 																{height: '47px', width: '47px', borderRadius: '50%'}
 															} src={
-																card1.photo.val && card1.photo.val[0] && card1.photo.val[0].url
+																char.cardAvatar.url
 															} alt={
-																card1.photo.val && card1.photo.val[0] && card1.photo.val[0].name
+																char.cardAvatar.name
 															} />
 														) : (
 															<Avatar size="47px" style={
 																{height: '47px', width: '47px', borderRadius: '150px'}
-															} className='char-prf-avtr' name={card1 && card1.name && card1.name.val} round={true} />
+															} className='char-prf-avtr' name={char && char.name && char.name.val} round={true} />
 														)
-
 													}
 												</div>
 											)
@@ -1773,21 +1941,22 @@ class BeatsMode extends React.Component {
 								<div className='cmn-prt crd-grp'>
 									{
 										data.settingField && (
-											<div className='crd-grp-cmn crds'>
+											<div className='crd-grp-cmn crds' 
+											onClick={() => {if (writeAccess) this.addPov(episode_id, scene_id, "setting", data.settingField)}}
+											>
 												{
-													settingFields[data.settingField] && settingFields[data.settingField].photo &&
-													settingFields[data.settingField].photo.has && settingFields[data.settingField].photo.val[0] ? (
+													settings && settings[data.settingField] && settings[data.settingField].cardAvatar ? (
 														<img className='char-prf-avtr' style={
 															{height: '47px', width: '47px', borderRadius: '50%'}
 														} src={
-															settingFields[data.settingField].photo.val[0].url
+															settings[data.settingField].cardAvatar.url
 														} alt={
-															settingFields[data.settingField].photo.val[0].name
+															settings[data.settingField].cardAvatar.name
 														} />
 													) : (
 														<Avatar size="47px" style={
 															{height: '47px', width: '47px', borderRadius: '150px'}
-														} className='char-prf-avtr' name={settingFields[data.settingField] && settingFields[data.settingField].name.val} round={true} />
+														} className='char-prf-avtr' name={settings[data.settingField] && settings[data.settingField].name} round={true} />
 													)
 
 												}
@@ -1904,16 +2073,20 @@ class BeatsMode extends React.Component {
 										  			{expand[index] ? (
 										  				<span className='exp-ic'>
 										  					<i className="fa fa-minus-square"></i>
-																<span className="fixed-hov-ob">Collapse All Scene Beats</span>
 										  				</span>
 										  			) : (
 										  				<span className='exp-ic'>
 										  					<i className="fa fa-plus-square"></i>
-																	<span className="fixed-hov-ob">Expand All Scene Beats</span>
-
 										  				</span>
 
 										  			)}
+
+										  			{expand[index] ? (
+										  				<span className="fixed-hov-ob">Collapse All Scene Beats</span>
+										  			) : (
+										  				<span className="fixed-hov-ob">Expand All Scene Beats</span>
+										  			)}
+										  			
 										  		</button>
 
 										  		{ this.getChapterBox(episode_id, epiData, index) }
@@ -1949,7 +2122,8 @@ class BeatsMode extends React.Component {
 														{sceneProvided.placeholder}
 
 														<div className='aln-cntr'>
-															{writeAccess && (<Fab className='bt-new-btn ltl-grn' color="primary" aria-label="Add" onClick={() => appendNewScene(episode_id)}><AddIcon /></Fab>) }
+															{writeAccess && (<Fab className='bt-new-btn ltl-grn' color="primary" aria-label="Add" onClick={() => appendNewScene(episode_id)}><AddIcon /><span className="fixed-hov-ob">Add Scene</span></Fab>) }
+                              
 														</div>
 													</div>
 												)
@@ -1966,7 +2140,8 @@ class BeatsMode extends React.Component {
 						{provided.placeholder}
 
 						<div className='aln-cntr'>
-							{writeAccess && (<Fab className='bt-new-btn' color="primary" aria-label="Add" onClick={appendNewEpisode}><AddIcon /></Fab>) }
+							{writeAccess && (<Fab className='bt-new-btn' color="primary" aria-label="Add" onClick={appendNewEpisode}><AddIcon /><span className="fixed-hov-ob">Add Chapter</span></Fab>) }
+           
 						</div>
 					</div>
 				)
@@ -1978,7 +2153,7 @@ class BeatsMode extends React.Component {
 	render() {
 		const {
 			handleBeatMode, world_name, seriesList,
-			series_id, onBeatBarDragEnd, summ_expand,
+			world_id, season_id, series_id, onBeatBarDragEnd, summ_expand,
 			showOneSumm, showExpndOneSumm, charFields, settingFields
 		} = this.props;
 
@@ -2036,6 +2211,7 @@ class BeatsMode extends React.Component {
 
 						<div className='b-mode' onClick={() => handleBeatMode("beatMode", false)}>
 							<img src={enable_beatmode} alt="enable beat mode" />
+							<span className="fixed-hov-ob">Exit Expanded Beats Mode</span>
 						</div>
 					</div>
 
@@ -2065,29 +2241,29 @@ class BeatsMode extends React.Component {
 								<button className={`expnd2`}
 								  onClick={() => this.props.expandBeat(true)}
 								>
-								{
-									Object.entries(showExpndOneSumm).length === 0 && summ_expand === true ? (
-									<img src={summary_selected_img} alt="summary_view..." />
-									) : (
-									<img src={summary_unselected_img} alt="summary_view..." />
-									)
-								}
-									<span className="fixed-hov-ob">Summary View</span>
+									{
+										Object.entries(showExpndOneSumm).length === 0 && summ_expand === true ? (
+										<img src={summary_selected_img} alt="summary_view..." />
+										) : (
+										<img src={summary_unselected_img} alt="summary_view..." />
+										)
+									}
 
+									<span className="fixed-hov-ob">Summary View</span>
 								</button>
 
 								<button className={`expnd3`}
 								  onClick={() => this.props.expandBeat("pov")}
 								>
-								{
-									Object.entries(showExpndOneSumm).length === 0 && summ_expand === "pov" ? (
-									<img src={pov_view_selected} style={{height: '25px', width: '25px'}} alt="summary_view..." />
-									) : (
-									<img src={pov_view_unselected} style={{height: '25px', width: '25px'}} alt="summary_view..." />
-									)
-								}
+									{
+										Object.entries(showExpndOneSumm).length === 0 && summ_expand === "pov" ? (
+										<img src={pov_view_selected} style={{height: '25px', width: '25px'}} alt="summary_view..." />
+										) : (
+										<img src={pov_view_unselected} style={{height: '25px', width: '25px'}} alt="summary_view..." />
+										)
+									}
 
-
+									<span className="fixed-hov-ob">POV View</span>
 								</button>
 							</div>
 
@@ -2111,6 +2287,8 @@ class BeatsMode extends React.Component {
 
 				<SelectPov
 					open={addPovOpen}
+					world_id={world_id}
+					season_id={season_id}
 					povFieldsOf={povFieldsOf}
 					charFields={charFields}
 					settingFields={settingFields}
@@ -2119,6 +2297,7 @@ class BeatsMode extends React.Component {
 					handleChange={this.handlePovChange}
 					closeModal={this.closePovModal}
 					savePovFor={this.savePovFor}
+					getAppearance={this.props.getAppearance}
 				/>
 			</div>
 		)

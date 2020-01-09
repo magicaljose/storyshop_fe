@@ -44,6 +44,8 @@ class Dashboard extends React.Component {
 	seasonWithWorldid = {}
 	popCheck=null;
     state = {
+    	defaultAllSeasons: {},
+    	defaultAllSeasonDatabase: {},
     	seasonDatabase: {},
     	defaultSeasonDatabase: {},
     	notAuthSeasons: {},
@@ -130,9 +132,7 @@ class Dashboard extends React.Component {
     	const callback = (error, result) => {
     		if (error) {
     			console.log(error);
-    		} else {
-    			onclose();
-    			
+    		} else {    			
 				secureStorage.setItem("storeToken", {
 					user_id: token.user_id,
 					user_name: token.user_name,
@@ -142,6 +142,8 @@ class Dashboard extends React.Component {
 					isNewUser: false,
 					doNotShowAgain: this.popCheck && this.popCheck.checked
 				});
+
+				onclose();
     		}
     	}
 
@@ -284,7 +286,60 @@ class Dashboard extends React.Component {
 
     	this.accessWorlds = realtimeGetQueries.getAccessWithUser_id(user_id, callback);
     	
-    	this.getAccessWorldSeasons("hluIYEVG4LM6OHv78pyT", "3Twr37S8At7aZqUnfNuL", false, true);
+    	this.getDefaultWorldSeasons("hluIYEVG4LM6OHv78pyT", "3Twr37S8At7aZqUnfNuL", false, true);
+    }
+
+    getDefaultWorldSeasons = (world_id, access_key, write, notHis) => {
+    	const cb = (error, results) => {
+			if (error) {
+				console.log(error);
+			} else {
+				if (results.data.docs.length > 0) {
+					results.data.docChanges().forEach(change => {
+						const snap = change.doc;
+
+						if (change.type === "removed") {
+							let ss_database = this.state.defaultAllSeasons;
+							let d_ss_database = this.state.defaultAllSeasonDatabase;
+
+							if (!ss_database || !d_ss_database) return;
+
+							delete ss_database[snap.id];
+							delete d_ss_database[snap.id];
+
+							this.setState({ defaultAllSeasons: ss_database, defaultAllSeasonDatabase: d_ss_database });
+							return;
+						}
+						
+						let obj = snap.data();
+
+						obj['key'] = snap.id;;
+						obj['access_key'] = access_key;
+						obj['wid'] = world_id;
+						obj['write'] = write;
+						obj['notHis'] = notHis;
+						obj['world_name'] = "";
+
+						this.setState(prevState => ({
+    						...prevState,
+    						loading: false,
+    						defaultAllSeasons: {
+    							...prevState.defaultAllSeasons,
+    							[snap.id]: obj
+    						},
+    						defaultAllSeasonDatabase: {
+    							...prevState.defaultAllSeasonDatabase,
+    							[snap.id]: obj
+    						}
+    					}));
+					});
+				} else {
+					this.setState({ loading: false });
+				}
+			}
+		}
+
+		this.seasonWithWorldid[world_id] = realtimeGetQueries.getSeasonWithWorld_id(world_id, cb);
     }
 
     getAccessWorldSeasons = (world_id, access_key, write, notHis) => {
@@ -358,24 +413,57 @@ class Dashboard extends React.Component {
         return data;
     }
 
+    getAuthSeasons = (list, authEqual) => {
+  		let updateDatabase = [];
+  		const user_id = localStorage.getItem("storyShop_uid");
+
+  		list.map(([key, season]) => {
+  			let oneFound = false;
+
+  			let data = season;
+
+  			if ((data.created_by === user_id) === authEqual) oneFound = true;
+
+  			if (oneFound) {
+				updateDatabase.push([key, season]);
+			}
+  		});
+
+  		return updateDatabase;
+  	}
+
+
     filterSeasonsBy = (type1, type2) => {
 	    const { defaultSeasonDatabase, defaultNotAuthSeasonDatabase } = this.state;
 
         let updateDatabase = this.getSortby(type1, Object.entries(defaultSeasonDatabase).slice());
         let updateNotAuth = this.getSortby(type1, Object.entries(defaultNotAuthSeasonDatabase).slice());
 
+        if (type2 === "Author") {
+        	updateDatabase = this.getAuthSeasons(updateDatabase, true);
+        	updateNotAuth = this.getAuthSeasons(updateNotAuth, true);
+        } else if (type2 === "Peer") {
+        	updateDatabase = this.getAuthSeasons(updateDatabase, false);
+        	updateNotAuth = this.getAuthSeasons(updateNotAuth, false);
+        }
+
         updateDatabase = updateDatabase.reduce((result, item) => {result[item[0]] = item[1]; return result}, {});
         updateNotAuth = updateNotAuth.reduce((result, item) => {result[item[0]] = item[1]; return result}, {});
 
         if (type2 === "Author") {
             this.setState({
-                seasonDatabase: updateDatabase,
-                notAuthSeasons: []
+            	seasonDatabase: updateDatabase,
+	        	notAuthSeasons: updateNotAuth
             });
         } else if (type2 === "Peer") {
             this.setState({
                 seasonDatabase: [],
                 notAuthSeasons: updateNotAuth
+            });
+        } else if (type2 === "World Owner")  {
+        	this.setState({
+                seasonDatabase: updateDatabase,
+                notAuthSeasons: []
             });
         } else {
             this.setState({
@@ -582,11 +670,12 @@ class Dashboard extends React.Component {
 		} = this.state;
 
 		let {
-			seasonDatabase, notAuthSeasons
+			seasonDatabase, notAuthSeasons, defaultAllSeasons
 		} = this.state;
 
 		seasonDatabase = Object.entries(seasonDatabase);
 		notAuthSeasons = Object.entries(notAuthSeasons);
+		defaultAllSeasons = Object.entries(defaultAllSeasons);
 
         if (!localStorage.getItem('storyShop_uid')) {
             return <Redirect to='/app' />
@@ -624,10 +713,10 @@ class Dashboard extends React.Component {
 				          name="secondFilter"
 				          value={this.state.secondFilter}
 				          options={[
-					        {text: "All Roles", value: "All Roles"},
-					        {text: "Author", value: "Author"},
-					        {text: "Peer", value: "Peer"},
-					        {text: "World Owner", value: "World Owner"}
+					        {text: "All Roles", value: "All Roles", id: "roll", label: "View All Books"},
+					        {text: "Author", value: "Author", id: "auth", label: "View Your Books"},
+					        {text: "Peer", value: "Peer", id: "peer", label: "View your Collaborators Books"},
+					        {text: "World Owner", value: "World Owner", id: "wown", label: "View Books in the Worlds You Own"}
 				          ]}
 				          onChange={this.handleDropChange}
 				        />
@@ -640,7 +729,6 @@ class Dashboard extends React.Component {
 				          name="thirdFilter"
 				          value={this.state.thirdFilter}
 				          options={[
-					        {text: "Last Updated", value: "Last Updated"},
 					        {text: "Newest", value: "Newest"},
 					        {text: "Oldest", value: "Oldest"}
 				          ]}
@@ -649,104 +737,90 @@ class Dashboard extends React.Component {
 			        </div>
 		        </div>
 
-		        {
-                	seasonDatabase.length === 0 && notAuthSeasons.length === 0 ?
-                 		<div className='empty-msg'>
-                     		Looks like your Dashboard is empty. Click the + in the bottom right to create a new project!
-                 		</div> 
-                 	:
-                 		<div className="main_grds">
-                     		{
-                     			seasonDatabase.map(([season_id, season]) => {
-                     				return (
-                     					<div key={season.key} className="inner_main_grds">
-											<div className="laye_r">
-												<img className="res_pon" alt="Season Default" src={season.img ? season.img : def}/>
-						            			
-						            			<span>
-													<Writer season_id={season.key} write={true} world_list={world_list}
-										   			  access_world_list={access_world_list} removeFromView={this.removeFromView} />
+		        <div className="main_grds">
+		        	{
+                 		defaultAllSeasons.map(([season_id, season]) => {
+                 			return (
+                      			<div key={season.key} className="inner_main_grds">
+			                        <div className="laye_r">
+                              			<img className="res_pon" alt="Season Default" src={season.img ? season.img : def}/>
+				                        <span>
+				                            <Writer access_key={season.access_key}
+						                      season_id={season.key} world_list={world_list} write={season.write}
+						                      notHis={season.notHis} access_world_list={access_world_list} removeFromView={this.removeFromView} />
 
-										   			<div className="lnk-grp-hv">
-										   				<Link
-										   				className="edit-book-ancr" to={`/${season.world_id}/${season.series_id}/${season.key}`}>
-										          			<img className="img_pop edit_s" alt="Edit With Publisher" src={Edit}/>
-										          			<span className="fixed-hov-ob">Open Book in Writer</span>
-									         			</Link>
-									         			
-										   			</div>
-								         		</span>
-								         		<span>
-								         			<Link className="" to={`/dashboard/book-publish`}>
-									          			<div className="img_pop edit_s src-1"> <i className="fas fa-book"></i></div>
-								         			</Link>
-													
-								         		</span>
+						                      <div className="lnk-grp-hv">
+						                      	<Link
+						                      	className="edit-book-ancr" to={`/${season.world_id}/${season.series_id}/${season.key}`}>
+					                            	<img className="img_pop edit_s" alt="Edit With Publisher" src={Edit}/>
+					                            	<span className="fixed-hov-ob">Open Book in Writer</span>
+					                        	</Link>
+								   			</div>
 
-								         		<span>
-								         		<Link className="" to={`/dashboard/book-data`}>
-									          			<div className="img_pop edit_s src-2"><i className="fas fa-line-chart"></i></div>
-								         			</Link>
-													
-								         		</span>
+				                            
 
-								         		<span>
-								         		<Link className="" to="#">
-									          			<div className="img_pop edit_s src-3"><i className="fas fa-dollar-sign"></i></div>
-								         			</Link>
-													
-								         		</span>
+				                        </span>
+				                    </div>
+				                    <h2 className='cmn-hd-cl'>{season.name}</h2>
+                      			</div>
+                  			)
+                 		})
+                 	}
 
+             		{
+             			seasonDatabase.map(([season_id, season]) => {
+             				return (
+             					<div key={season.key} className="inner_main_grds">
+									<div className="laye_r">
+										<img className="res_pon" alt="Season Default" src={season.img ? season.img : def}/>
+				            			
+				            			<span>
+											<Writer season_id={season.key} write={true} world_list={world_list}
+								   			  access_world_list={access_world_list} removeFromView={this.removeFromView} />
 
-						         			</div>
-						         			
-						         			<h2 className='cmn-hd-cl'>{season.name}</h2>
-                              			</div>
-                     				)
-                     			})
-                     		}
-		                 
-		                 	{
-		                 		notAuthSeasons.map(([season_id, season]) => {
-		                 			return (
-                              			<div key={season.key} className="inner_main_grds">
-					                        <div className="laye_r">
-                                      			<img className="res_pon" alt="Season Default" src={season.img ? season.img : def}/>
-						                        <span>
-						                            <Writer access_key={season.access_key}
-								                      season_id={season.key} world_list={world_list} write={season.write}
-								                      notHis={season.notHis} access_world_list={access_world_list} removeFromView={this.removeFromView} />
+								   			<div className="lnk-grp-hv">
+								   				<Link
+								   				className="edit-book-ancr" to={`/${season.world_id}/${season.series_id}/${season.key}`}>
+								          			<img className="img_pop edit_s" alt="Edit With Publisher" src={Edit}/>
+								          			<span className="fixed-hov-ob">Open Book in Writer</span>
+							         			</Link>
+							         			
+								   			</div>
+						         		</span>
+				         			</div>
+				         			
+				         			<h2 className='cmn-hd-cl'>{season.name}</h2>
+                      			</div>
+             				)
+             			})
+             		}
+                 
+                 	{
+                 		notAuthSeasons.map(([season_id, season]) => {
+                 			return (
+                      			<div key={season.key} className="inner_main_grds">
+			                        <div className="laye_r">
+                              			<img className="res_pon" alt="Season Default" src={season.img ? season.img : def}/>
+				                        <span>
+				                            <Writer access_key={season.access_key}
+						                      season_id={season.key} world_list={world_list} write={season.write}
+						                      notHis={season.notHis} access_world_list={access_world_list} removeFromView={this.removeFromView} />
 
-								                      <div className="lnk-grp-hv">
-								                      	<Link
-								                      	className="edit-book-ancr" to={`/${season.world_id}/${season.series_id}/${season.key}`}>
-							                            	<img className="img_pop edit_s" alt="Edit With Publisher" src={Edit}/>
-							                            	<span className="fixed-hov-ob">Open Book in Writer</span>
-							                        	</Link>
-										   			</div>
-
-						                            
-
-						                        </span>
-						                        <span>
-													<div className="img_pop edit_s src-1"> <i className="fas fa-book"></i></div>
-								         		</span>
-
-								         		<span>
-													<div className="img_pop edit_s src-2"><i className="fas fa-line-chart"></i></div>
-								         		</span>
-
-								         		<span>
-													<div className="img_pop edit_s src-3"><i className="fas fa-dollar-sign"></i></div>
-								         		</span>
-						                    </div>
-						                    <h2 className='cmn-hd-cl'>{season.name}</h2>
-                              			</div>
-                          			)
-		                 		})
-		                 	}
-                 		</div>
-                }
+						                      <div className="lnk-grp-hv">
+						                      	<Link
+						                      	className="edit-book-ancr" to={`/${season.world_id}/${season.series_id}/${season.key}`}>
+					                            	<img className="img_pop edit_s" alt="Edit With Publisher" src={Edit}/>
+					                            	<span className="fixed-hov-ob">Open Book in Writer</span>
+					                        	</Link>
+								   			</div>
+				                        </span>
+				                    </div>
+				                    <h2 className='cmn-hd-cl'>{season.name}</h2>
+                      			</div>
+                  			)
+                 		})
+                 	}
+         		</div>
 
                 <div className="footer">
                     <div className="container">

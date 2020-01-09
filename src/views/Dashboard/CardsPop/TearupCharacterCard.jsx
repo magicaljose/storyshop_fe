@@ -8,6 +8,9 @@ import {
 import Radio from '@material-ui/core/Radio';
 import RadioGroup from '@material-ui/core/RadioGroup';
 import Files from 'react-files';
+import Cropper from 'react-cropper';
+import 'cropperjs/dist/cropper.css';
+
 import CharUpdateFields from '../UpdateFields/CharUpdateFields';
 import SocialCharacterCard from './SocialCharacterCard';
 import {dbStorage} from 'config_db/firebase';
@@ -31,6 +34,7 @@ import updateQueries from 'queries/updateQueries';
 import deleteQueries from 'queries/deleteQueries';
 
 import worldBuilders from 'views/worldBuilders.js';
+import loadSpin from 'assets/img/icons/loadSpin.gif';
 
 import queryString from 'query-string';
 
@@ -67,6 +71,14 @@ class TearupCharacterCard extends React.Component {
 		rolling: "",
 	  	currentSlide: 0,
 	  	showSocialChar: true,
+	  	cropStartOn: null,
+	  	defaultCrop: {
+	  		unit: 'px',
+	  	 	x: 0,
+	     	y: 0,
+	      	width: 180,
+	      	height: 200,
+	  	}
   	}
 
   	componentDidMount = () => {
@@ -141,7 +153,7 @@ class TearupCharacterCard extends React.Component {
 		getQueries.getDnaQuestions("character_dna", usDB);
 		getQueries.getBuilderWithDoc(builder_id, callback);
 
-		this.getBuilderAppearances(builder_id, season_id);
+		this.getBuilderAppearances(builder_id, world_id, season_id);
   	}
 
   	shouldComponentUpdate = () => {
@@ -185,7 +197,7 @@ class TearupCharacterCard extends React.Component {
     	}
   	}
 
-  	getBuilderAppearances = (builder_id, season_id) => {
+  	getBuilderAppearances = (builder_id, world_id, season_id) => {
   		const callback = (error, result) => {
   			if (error) {
   				console.log(error);
@@ -203,7 +215,35 @@ class TearupCharacterCard extends React.Component {
   		}
 
   		getQueries.getBuilderAppearances(builder_id, season_id, callback);
+
+  		this.getWorldAppearance(builder_id, world_id);
   	}
+
+  	getWorldAppearance = (builder_id, world_id) => {
+		const cb = (error, result) => {
+			if (error) {
+				console.log(error);
+			} else {
+				result.data.forEach(data => {
+					this.setState(prevState => ({
+  						...prevState,
+  						fields: {
+  							...prevState.fields,
+  							worldAppearance: {
+								...prevState.fields.worldAppearance,
+								[data.data().season_id]: {
+									appearances: data.data().appearances, 
+									season_name: data.data().season_name
+								}
+							}
+  						}
+  					}));
+				})
+			}								
+		}
+
+		getQueries.getBuilderAppearancesWithWorld(builder_id, world_id, cb);
+	}
 
   	getBuilderCards = (world_id) => {
   		worldBuilders.map(type => {
@@ -287,6 +327,11 @@ class TearupCharacterCard extends React.Component {
 	    obj["ss_background_image"] = fields.ss_background_image || "";
 	    
 	    obj["category"] = fields.category;
+	    obj["cardAvatar"] = fields.cardAvatar;
+	    obj["series_id"] = fields.series_id;
+	    obj["season_id"] = fields.season_id;
+	    obj["world_id"] = fields.world_id;
+	    obj["worldAppearance"] = {};
 
 	    return obj;
     }
@@ -630,7 +675,8 @@ class TearupCharacterCard extends React.Component {
 
     	if (currentSlide !== index) {
       		this.setState({
-        		currentSlide: index
+        		currentSlide: index,
+        		cropStartOn: null
       		});
     	}
   	}
@@ -688,9 +734,9 @@ class TearupCharacterCard extends React.Component {
   		const world_id = query.forworld;
 
 		newFields["category"] = "character";
-		newFields["season_id"] = season_id;
-		newFields["series_id"] = series_id;
-		newFields["world_id"] = world_id;
+		if (!fields.season_id) newFields["season_id"] = season_id;
+		if (!fields.series_id) newFields["series_id"] = series_id;
+		if (!fields.world_id) newFields["world_id"] = world_id;
 
 		// Handle relationship fields
 		this.handleRelationships(builder_id, fields, newFields, "character");
@@ -747,6 +793,8 @@ class TearupCharacterCard extends React.Component {
 		if (fields.dna && fields.dna.has === true) {
 			charFields['dna'] = fields.dna.val;
 		}
+
+		if (fields.cardAvatar) charFields["cardAvatar"] = fields.cardAvatar;
 
 		return charFields;
 	}
@@ -893,6 +941,103 @@ class TearupCharacterCard extends React.Component {
 		}
 	}
 
+	handleAvatarChange = index => event => {
+  		let files = this.state.fields.photo.val;
+
+  		if (!files[index]) return;
+
+  		let cardChanged = files[index];
+
+  		cardChanged["photoIndex"] = index;
+
+  		this.updateBuilder(cardChanged);
+
+  		this.setState(prevState => ({
+  			...prevState,
+  			fields: {
+  				...prevState.fields,
+  				cardAvatar: cardChanged
+  			}
+  		}));
+  	}
+
+  	saveCropPart = (index) => {
+  		let files = this.state.fields.photo.val;
+
+  		if (!files[index]) return;
+
+  		let cardChanged = JSON.parse(JSON.stringify(files[index]));
+		cardChanged["photoIndex"] = index;
+		cardChanged["crop"] = this.state.defaultCrop;
+
+  		const callback = (error, result) => {
+			if (error) {
+				console.log(error);
+			} else {
+				const { downloadURL } = result;
+
+				this.setState({ uploadingAvatar: false });
+			  	cardChanged["url"] = downloadURL;
+
+			  	files[index]["url"] = downloadURL;
+
+			  	if (this.state.fields.cardAvatar && this.state.fields.cardAvatar.photoIndex === index) {
+			  		this.updateBuilder({ photo: files, cardAvatar: cardChanged });
+			  	} else {
+			  		this.updateBuilder({ photo: files });
+			  	}
+
+		  		this.setState(prevState => ({
+		  			...prevState,
+		  			cropStartOn: null,
+		  			defaultCrop: {
+				  		unit: 'px',
+				  	 	x: 0,
+				     	y: 0,
+				      	width: 180,
+				      	height: 200,
+				  	},
+		  			fields: {
+		  				...prevState.fields,
+		  				cardAvatar: cardChanged
+		  			}
+		  		}));
+			}
+		}
+
+		this.setState({ uploadingAvatar: true });
+
+		this.uploadBlob(this.refs.cropper.getCroppedCanvas().toDataURL(), callback);
+  	}
+
+  	uploadBlob = (blob, callback) => {
+  		const storage_ref = dbStorage.ref();
+	    const image_child = storage_ref.child('social_profile');
+	    const image = image_child.child(`${Date.now()}`);
+
+		const uploadTask = image.putString(blob, 'data_url');
+
+	    uploadTask.on('state_changed', (snapshot) => {
+		}, (error) => {callback(error, null)}, () => {
+			uploadTask.snapshot.ref.getDownloadURL().then((downloadURL) => {
+			  	callback(null, {downloadURL});
+	        });
+	    });
+  	}
+
+  	updateBuilder = (data) => {
+  		const { builder_id } = this.props.match.params;
+  		updateQueries.updateBuilder(builder_id, data, () => {});
+  	}
+
+  	cropStart = (index) => {
+  		this.setState({ cropStartOn: index });
+  	}
+
+  	onCropChange = crop => {
+  		this.setState({ defaultCrop: crop });
+  	}
+
 	openModal = name => (event) => {
 		this.setState({ openField: true });
 	}
@@ -911,7 +1056,8 @@ class TearupCharacterCard extends React.Component {
 
   		const { 
     		openField, writeAccess, fields, tags, desc, charVal, relType, birthD, deathD, showSocialChar,
-			prevFields, progress, imgIndex, direction, rndm, rolling, showLite
+			prevFields, progress, imgIndex, direction, rndm, rolling, showLite, defaultCrop, cropStartOn,
+			uploadingAvatar
 		} = this.state;
 
 		const {
@@ -1060,10 +1206,55 @@ class TearupCharacterCard extends React.Component {
 			          										{
 									          					fields.photo.val.map((file, index) => (
 									          						<div className='cmn-crs' key={index}>
-									          							<img className='crs-img' width={"100%"} height={200} alt="400x200" src={file.url} />
-									          							<Button className='sml-crss' onClick={() => this.removeFile(index)}>
-									          								<img alt="delete" src={delete_img} />
-									          							</Button>
+									          							{
+									          								cropStartOn === index ? (
+									          									<Cropper
+																			        ref='cropper'
+																			        src={file.url}
+																			        style={{height: 200, width: '100%', maxWidth: '100%'}}
+																			        // Cropper.js options
+																			        background={false}
+																			        movable={false}
+																			        rotatable={false}
+																			        zoomable={false}
+																			        zoomOnTouch={false}
+																			        zoomOnWheel={false}
+																			        guides={false}
+																			        viewMode={1}
+																			        minCropBoxWidth={90}
+																			        minCropBoxHeight={100}
+																			    />
+									          								) : (
+									          									<img className='crs-img' width={"100%"} height={200} alt="400x200" src={file.url} />
+									          								)
+									          							}
+									          							<div className='sml-crss'>
+									          								{
+									          									fields.cardAvatar && fields.cardAvatar.photoIndex === index && 
+									          									cropStartOn !== null && cropStartOn === index && (
+									          										<button className='crp-sve' onClick={() => this.saveCropPart(index)}>
+									          											Save { uploadingAvatar && (<span><img src={loadSpin} alt="loading" /></span>)}
+									          										</button>
+									          									)
+									          								}
+
+									          								{
+									          									fields.cardAvatar && fields.cardAvatar.photoIndex === index && (
+									          										<button className='crp-btn' onClick={() => this.cropStart(index)}>
+											          									<i className="fa fa-crop"></i>
+											          								</button>
+									          									)
+									          								}
+
+									          								<input className='chk-bxx' type='checkbox' 
+									          								  name="cardAvatar" checked={fields.cardAvatar ? fields.cardAvatar.photoIndex === index : false} 
+									          								  onChange={this.handleAvatarChange(index)} 
+									          								/>
+
+									          								<button className='ddl-btn' onClick={() => this.removeFile(index)}>
+										          								<img alt="delete" src={delete_img} />
+										          							</button>
+									          							</div>
 									          						</div>
 									          					))
 									          				}

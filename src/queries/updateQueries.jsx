@@ -249,7 +249,7 @@ const updateBuilderAppearances = (builder_id, season_id, data, cb) => {
 	const builder = firestoreDb.collection("builder").doc(builder_id);
 	const appearances = builder.collection("appearances");
 
-	appearances.doc(season_id).set(data, {merge: true})
+	appearances.doc(season_id).set(data)
 	  .then(() => {
 	  	cb(null, {status: 1, message: "Card Appearances updated"});
 	}).catch(error => {

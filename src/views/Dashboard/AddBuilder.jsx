@@ -50,8 +50,11 @@ class AddBuilder extends React.Component {
     return (
       <div>
         <Fab className="bt-new-btn" color="primary" aria-label="Add" onClick={openModal}>
+
           <AddIcon />
+             <span className="fixed-hov-ob">Add New Category</span>
         </Fab>
+
 
 		    <Popup className='rgt-side-fst-pop' open={open} onClose={closeModal} modal closeOnDocumentClick >
 			<Scrollbars className='cmn-lsts' autoHide autoHideDuration={200}>
@@ -93,8 +96,8 @@ class AddBuilder extends React.Component {
           					  />
           					}
           					label={<span>
-                      {type.toLowerCase() !== "notes & reference" ? type : "Notes/Reference"} 
-                      {showLite && !liteWorldBuilders.includes(type) && (<UpgradePop />)} 
+                      {type.toLowerCase() !== "notes & reference" ? type : "Notes/Reference"}
+                      {showLite && !liteWorldBuilders.includes(type) && (<UpgradePop />)}
                       </span>}
 							labelPlacement="start"
           				  />
@@ -137,7 +140,7 @@ class AddBuilder extends React.Component {
 
 		      </div>
 			</Scrollbars>
-		      <Button className="btns" onClick={handleFieldSave}>Save</Button>
+		      <Button className="btns" onClick={handleFieldSave}>Save </Button>
           <Button className="btns" onClick={cancelBuilderModal}>Cancel</Button>
         </Popup>
       </div>

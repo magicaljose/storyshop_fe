@@ -116,15 +116,15 @@ class WorldPage extends React.Component{
 
   						worldDatabase.push(world_data);
 
-             			this.setState({ 
-             				defualtWorldDatabase: worldDatabase, 
+             			this.setState({
+             				defualtWorldDatabase: worldDatabase,
              				worldDatabase: worldDatabase,
              				loading: false
              			});
   					});
   				} else {
-  					this.setState({ 
-  						defualtWorldDatabase: [], 
+  					this.setState({
+  						defualtWorldDatabase: [],
   						worldDatabase: [],
   						loading: false
   					});
@@ -172,8 +172,11 @@ class WorldPage extends React.Component{
 									obj['notHis'] = notHis;
 
 									accessDatabase.push(obj);
-  								} else {
-  									return
+
+                                    this.setState({
+                                        accessDatabase: accessDatabase,
+                                        defaultAccessDatabase: accessDatabase
+                                    });
   								}
   							}
   						}
@@ -181,18 +184,18 @@ class WorldPage extends React.Component{
   						getQueries.getWorldWithDoc(world_id, cb);
   					});
 
-  					// Set timeout because firebase functions return value after loop complete 
+  					// Set timeout because firebase functions return value after loop complete
   					// So we have to wait until firebase completes his process
-  					setTimeout(() => {
-					  	this.setState({ 
-					  		accessDatabase: accessDatabase, 
+  					/*setTimeout(() => {
+					  	this.setState({
+					  		accessDatabase: accessDatabase,
 					  		defaultAccessDatabase: accessDatabase
 					  	});
-				  	}, 1000);
+				  	}, 1000);*/
   				} else {
-  					this.setState({ 
-  						accessDatabase: [], 
-  						defaultAccessDatabase: [] 
+  					this.setState({
+  						accessDatabase: [],
+  						defaultAccessDatabase: []
   					});
   				}
   			}
@@ -281,8 +284,8 @@ class WorldPage extends React.Component{
 	    			const key = results.key;
 
 	    			this.setState({
-			    		name: "", 
-			    		key: key, 
+			    		name: "",
+			    		key: key,
 			    		openValue: false
 			    	});
 	    		}
@@ -428,10 +431,10 @@ class WorldPage extends React.Component{
 				      name="secondFilter"
 				      value={this.state.secondFilter}
 				      options={[
-					      {text: "All Roles", value: "All Roles"},
-					      {text: "Author", value: "Author"},
-					      {text: "Peer", value: "Peer"},
-					      {text: "World Owner", value: "World Owner"}
+					      {text: "All Roles", value: "All Roles", id: "roll", label: "View All Books"},
+					      {text: "Author", value: "Author", id: "auth", label: "View Your Books"},
+					      {text: "Peer", value: "Peer", id: "peer", label: "View your Collaborators Books"},
+					      {text: "World Owner", value: "World Owner", id: "wown", label: "View Books in the Worlds You Own"}
 				      ]}
 				      onChange={this.handleDropChange}
 				    />
@@ -475,9 +478,9 @@ class WorldPage extends React.Component{
               <img className="img_pop edit_s" alt="World Edit" src={Edit}/>
               <span className="fixed-hov-ob">Go to World</span>
             </Link>
-            
+
                             </div>
-						
+
 					</span>
 				</div>
 				<h2 className='cmn-hd-cl'>{world.name}</h2>
@@ -496,14 +499,14 @@ class WorldPage extends React.Component{
 
                 <div className="lnk-grp-hv">
 
-                <Link 
+                <Link
                 className="lnk-wrld edit-book-ancr" to={`/${world.key}/seasons`}>
                 <img className="img_pop edit_s wrld" alt="World Edit" src={Edit}/>
                   <span className="fixed-hov-ob">Go to World</span>
               </Link>
                             </div>
 
-							
+
 						</span>
 					</div>
 					<h2 className='cmn-hd-cl'>{world.name}</h2>

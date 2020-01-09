@@ -57,6 +57,7 @@ import export_close from 'assets/img/export-file_close.png';
 import export_open from 'assets/img/export-file_open.png';
 
 import cmnt_toggle from 'assets/img/icons/cmnt-tggl.png';
+import exit_tool from 'assets/img/icons/exit_tool.png';
 
 import {db} from 'config_db/firebase';
 import appbaseRef from 'config_db/appbase';
@@ -427,6 +428,7 @@ class MainPad extends React.Component {
 			bookGoal: 0,
 			dailyGoal: 0,
 		},
+		filterLoading: true,
 		commentProOpen: false,
 		commentsList: {},
 		commentsList_newItem: {},
@@ -671,6 +673,8 @@ class MainPad extends React.Component {
 	    	const selectedFilter = this.state.worldBarFilter.selectedFilter;
 	    	const id = this.state.worldBarFilter[selectedFilter].id;
 
+	    	this.setState({ search: "" });
+
 	    	worldBuilders.map(type => {
 		        // builderChecks[type.toLowerCase()] = false;
 		        this.getBuilders(type.toLowerCase(), selectedFilter, id);
@@ -737,6 +741,11 @@ class MainPad extends React.Component {
         	this.cardAssistant();
         	this.cardAssistant = null;
         }
+
+        if (this.builderAppearance) {
+        	this.builderAppearance();
+        	this.builderAppearance = null;
+        }
     }
 
     handleClickOutside = (event) => {
@@ -763,6 +772,10 @@ class MainPad extends React.Component {
 
 	      	if (this.ref.export_pop && !this.ref.export_pop.contains(event.target)) {
 		        if (this.state.export_pop) this.setState({ export_pop: false });
+	      	}
+
+	      	if (this.ref.remove_pop && !this.ref.remove_pop.contains(event.target)) {
+	      		if (this.state.trash_recover) this.setState({ trash_recover: false });
 	      	}
 		} catch (e) {
 			console.log(e);
@@ -915,6 +928,7 @@ class MainPad extends React.Component {
     		if (error) {
     			console.log(error);
     		} else {
+    			console.log(result);
     			if (result.status === 1) {
     				let seasonCount_obj = result.data;
 
@@ -1018,7 +1032,7 @@ class MainPad extends React.Component {
 						}
     				});
     			} else {
-    				this.setState({ world });
+    				this.setState({ world, filterLoading: false });
     			}
     		}
     	}
@@ -1038,7 +1052,6 @@ class MainPad extends React.Component {
     				let episode_count_check = 0;
 
     				results.data.docChanges().forEach(change => {
-    					console.log(change.type);
     					const snap = change.doc;
 
     					const episode_id = snap.id;
@@ -1046,41 +1059,9 @@ class MainPad extends React.Component {
 						let episodeData = snap.data();
 
 						if (episodeData.isDeleted === true) return;
-						console.log(change.type);
-						console.log(episodeData);
 
     					if (change.type === "modified") {
-    						if (!this.state.world.seasons[season_id].episodes[episode_id] && episodeData.isDeleted === false) {
-    							return console.log("restored episode");
-    						}
-    						try {
-								this.setState(prevState => ({
-									...prevState,
-									world: {
-										...prevState.world,
-										seasons: {
-											...prevState.world.seasons,
-											[season_id]: {
-												...prevState.world.seasons[season_id],
-												episodes: {
-													...prevState.world.seasons[season_id].episodes,
-													[episode_id]: {
-														...prevState.world.seasons[season_id].episodes[episode_id],
-														name: episodeData.name,
-														pulse: episodeData.pulse,
-														summary: episodeData.summary
-													}
-												}
-											}
-										}
-									}
-								}));
-							} catch (cErr) {console.log(cErr)};
-
-							return;
-    						/*if (episodeData.isDeleted === false) {
-    							console.log("Restored")
-    						} else {
+    						if (!this.state.world.seasons[season_id].episodes[episode_id] && episodeData.isDeleted === false) {} else {
     							try {
 									this.setState(prevState => ({
 										...prevState,
@@ -1094,9 +1075,9 @@ class MainPad extends React.Component {
 														...prevState.world.seasons[season_id].episodes,
 														[episode_id]: {
 															...prevState.world.seasons[season_id].episodes[episode_id],
-															name: episodeData.name,
-															pulse: episodeData.pulse,
-															summary: episodeData.summary
+															name: episodeData.name || "",
+															pulse: episodeData.pulse || "",
+															summary: episodeData.summary || ""
 														}
 													}
 												}
@@ -1106,7 +1087,7 @@ class MainPad extends React.Component {
 								} catch (cErr) {console.log(cErr)};
 
 								return;
-    						}*/
+    						}
 						}
 
 						if (change.type === "removed") return;
@@ -1125,8 +1106,6 @@ class MainPad extends React.Component {
 						episodeData['showEpisode'] = true;
 						episodeData["scenes"] = {};
 						episodeData["count"] = 0;
-
-						// console.log(episodeData);
 
 						this.getScenes(season_id, episode_id, results.data.docs.length, a);
 						this.getMessagesDetails(season_id, episode_id);
@@ -1148,7 +1127,10 @@ class MainPad extends React.Component {
 							}
 						}));
     				});
+
+    				this.setState({ filterLoading: false });
     			} else {
+    				this.setState({ filterLoading: false });
     				setQueries.insertEpisode({
     					name: "",
     					created_date: new Date().toISOString(),
@@ -1192,93 +1174,70 @@ class MainPad extends React.Component {
 
 						if (change.type === "modified") {
 							try {
-								if (this.state.world.seasons[season_id].episodes[episode_id].scenes[scene_id].story !== scene_data.story) {
+								if (!this.state.world.seasons[season_id].episodes[episode_id]) {return;
+								} else if (!this.state.world.seasons[season_id].episodes[episode_id].scenes[scene_id] && 
+								scene_data.isDeleted === false) {} else {
+									if (this.state.world.seasons[season_id].episodes[episode_id].scenes[scene_id].story !== scene_data.story) {
 									// document.getElementById(scene_id).innerHTML = scene_data.story;
 
-									this.setState(prevState => ({
-										...prevState,
-										world: {
-											...prevState.world,
-											seasons: {
-												...prevState.world.seasons,
-												[season_id]: {
-													...prevState.world.seasons[season_id],
-													episodes: {
-														...prevState.world.seasons[season_id].episodes,
-														[episode_id]: {
-															...prevState.world.seasons[season_id].episodes[episode_id],
-															scenes: {
-																...prevState.world.seasons[season_id].episodes[episode_id].scenes,
-																[scene_id]: {
-																	...prevState.world.seasons[season_id].episodes[episode_id].scenes[scene_id],
-																	story: scene_data.story
+										this.setState(prevState => ({
+											...prevState,
+											world: {
+												...prevState.world,
+												seasons: {
+													...prevState.world.seasons,
+													[season_id]: {
+														...prevState.world.seasons[season_id],
+														episodes: {
+															...prevState.world.seasons[season_id].episodes,
+															[episode_id]: {
+																...prevState.world.seasons[season_id].episodes[episode_id],
+																scenes: {
+																	...prevState.world.seasons[season_id].episodes[episode_id].scenes,
+																	[scene_id]: {
+																		...prevState.world.seasons[season_id].episodes[episode_id].scenes[scene_id],
+																		story: scene_data.story
+																	}
 																}
 															}
 														}
 													}
 												}
 											}
-										}
-									}));
+										}));
 
-									return;
-								} /*else if (scene_data.isDeleted === false) {
-								} else {
+										return;
+									}
+
 									this.setState(prevState => ({
-										...prevState,
-										world: {
-											...prevState.world,
-											seasons: {
-												...prevState.world.seasons,
-												[season_id]: {
-													...prevState.world.seasons[season_id],
-													episodes: {
-														...prevState.world.seasons[season_id].episodes,
-														[episode_id]: {
-															...prevState.world.seasons[season_id].episodes[episode_id],
-															scenes: {
-																...prevState.world.seasons[season_id].episodes[episode_id].scenes,
-																[scene_id]: {
-																	...prevState.world.seasons[season_id].episodes[episode_id].scenes[scene_id],
-																	pulse: scene_data.pulse,
-																	summary: scene_data.summary
+											...prevState,
+											world: {
+												...prevState.world,
+												seasons: {
+													...prevState.world.seasons,
+													[season_id]: {
+														...prevState.world.seasons[season_id],
+														episodes: {
+															...prevState.world.seasons[season_id].episodes,
+															[episode_id]: {
+																...prevState.world.seasons[season_id].episodes[episode_id],
+																scenes: {
+																	...prevState.world.seasons[season_id].episodes[episode_id].scenes,
+																	[scene_id]: {
+																		...prevState.world.seasons[season_id].episodes[episode_id].scenes[scene_id],
+																		pulse: scene_data.pulse || "",
+																		summary: scene_data.summary || "",
+																		sort: scene_data.sort || 0
+																	}
 																}
 															}
 														}
 													}
 												}
 											}
-										}
-									}));
-									return;
-								}*/
-								this.setState(prevState => ({
-										...prevState,
-										world: {
-											...prevState.world,
-											seasons: {
-												...prevState.world.seasons,
-												[season_id]: {
-													...prevState.world.seasons[season_id],
-													episodes: {
-														...prevState.world.seasons[season_id].episodes,
-														[episode_id]: {
-															...prevState.world.seasons[season_id].episodes[episode_id],
-															scenes: {
-																...prevState.world.seasons[season_id].episodes[episode_id].scenes,
-																[scene_id]: {
-																	...prevState.world.seasons[season_id].episodes[episode_id].scenes[scene_id],
-																	pulse: scene_data.pulse,
-																	summary: scene_data.summary
-																}
-															}
-														}
-													}
-												}
-											}
-										}
-									}));
-									return;
+										}));
+										return;
+								}
 							} catch (scErr) {console.log(scErr)};
 						}
 
@@ -1297,10 +1256,18 @@ class MainPad extends React.Component {
 
 						const story_count = scene_data.story || "";
 
-						const ele = document.createElement("div");
-						ele.innerHTML = story_count;
+						const sceneHTML = document.createElement("div");
+						sceneHTML.innerHTML = story_count;
 
-						let cc = ele.innerText.split(/\s+/g).length;
+						let cc = 0;
+
+						if (sceneHTML) {
+							Array.from(sceneHTML.children).forEach(ele => {
+								if (ele.innerText.trim()) {
+									cc += ele.innerText.trim().split(/\s+/g).length;
+								}
+							});
+						}
 
 						scene_data["count"] = cc;
 
@@ -1381,6 +1348,8 @@ class MainPad extends React.Component {
 							this.setState({ isNoBookCount: false })
 						}
 					}
+				} else {
+					this.setState({ filterLoading: false });
 				}
 			}
 		}
@@ -1676,19 +1645,43 @@ class MainPad extends React.Component {
 
 						if (card_data.isDeleted) return;
 
-						if (card_data.relationship_list) {
-							this.getCardRelationships(cardKey, whichFields, whichInitFields);
+						if (selectedFilter === "showInSeason") {
+							let got_appearance = false;
+
+							if (card_data.name) {
+								const appearance = this.getAppearance(card_data.name);
+
+								if (appearance.length > 0) {
+									got_appearance = true;
+								}
+							}
+
+							if (!got_appearance && card_data.realAliases) {
+								card_data.realAliases.map(tag => {
+									if (got_appearance) return;
+
+									const appearance = this.getAppearance(tag);
+
+									if (appearance.length > 0) {
+										got_appearance = true;
+									}
+								});
+							}
+
+							if (got_appearance) {
+								const obj = this.handleBuilderCommon(card_data, cardKey, whichFields, whichInitFields);
+
+								worldBuilders.push(snap.data().name);
+
+								cardFields[cardKey] = obj;
+							}
+						} else {
+							const obj = this.handleBuilderCommon(card_data, cardKey, whichFields, whichInitFields);
+
+							worldBuilders.push(snap.data().name);
+
+							cardFields[cardKey] = obj;
 						}
-
-						this.getBuilderAppearances(cardKey, whichFields, whichInitFields);
-
-						let obj = this.makeCharFields(card_data);
-
-						// this.replaceAppearance(snap.data().name);
-
-						worldBuilders.push(snap.data().name);
-
-						cardFields[cardKey] = obj;
 					});
 
 					this.setState(prevState => ({
@@ -1712,11 +1705,22 @@ class MainPad extends React.Component {
 
 	    if (selectedFilter === "showInSeries") {
 	      	this.BuilderWithType = realtimeGetQueries.getBuildersWithSeries_id(type, id, callback);
-	    } else if (selectedFilter === "showInSeason") {
-	      	this.BuilderWithType = realtimeGetQueries.getBuildersWithSeason_id(type, id, callback);
 	    } else {
-			this.BuilderWithType = realtimeGetQueries.getBuildersWithWorld_id(type, id, callback);
+	    	const { world_id } = this.props.match.params;
+			this.BuilderWithType = realtimeGetQueries.getBuildersWithWorld_id(type, world_id, callback);
 	    }
+    }
+
+    handleBuilderCommon = (card_data, cardKey, whichFields, whichInitFields) => {
+    	if (card_data.relationship_list) {
+			this.getCardRelationships(cardKey, whichFields, whichInitFields);
+		}
+
+		this.getBuilderAppearances(cardKey, whichFields, whichInitFields);
+
+		let obj = this.makeCharFields(card_data);
+
+		return JSON.parse(JSON.stringify(obj));
     }
 
     getCardRelationships = (builder_id, whichFields, whichInitFields) => {
@@ -1809,7 +1813,7 @@ class MainPad extends React.Component {
 
   		const { season_id } = this.props.match.params;
 
-  		getQueries.getBuilderAppearances(builder_id, season_id, callback);
+  		this.builderAppearance = realtimeGetQueries.getBuilderAppearances(builder_id, season_id, callback);
   	}
 
     onBeatScrollHandler = (e) => {
@@ -1962,8 +1966,8 @@ class MainPad extends React.Component {
 									                      [scene_id]: {
 										                        ...prevState.world.seasons[season_id].episodes[episode_id].scenes[scene_id],
 										                        name: fields.name,
-										                        summary: fields.summary,
-										                        notes: fields.notes,
+										                        summary: fields.summary || "",
+										                        notes: fields.notes || "",
 										                        pulse: fields.pulse || ""
 									                      }
 								                    }
@@ -1988,8 +1992,8 @@ class MainPad extends React.Component {
 							                  [episode_id]: {
 								                    ...prevState.world.seasons[season_id].episodes[episode_id],
 								                    name: fields.name,
-								                    summary: fields.summary,
-								                    notes: fields.notes,
+								                    summary: fields.summary || "",
+								                    notes: fields.notes || "",
 								                    pulse: fields.pulse || ""
 							                  }
 						                }
@@ -2007,9 +2011,9 @@ class MainPad extends React.Component {
 					              ...prevState.world.seasons,
 					              [season_id]: {
 						                ...prevState.world.seasons[season_id],
-						                name: fields.name,
-						                summary: fields.summary,
-						                notes: fields.notes
+						                name: fields.name || "",
+						                summary: fields.summary || "",
+						                notes: fields.notes || ""
 					              }
 				            }
 			          },
@@ -2078,8 +2082,11 @@ class MainPad extends React.Component {
 	      fields.relationship_list && fields.relationship_list.length > 0 ? obj["relation"] = {has: true, val: {}} : obj["relation"] = {has: false, val: {}};
 
 	      obj["ss_background_image"] = fields.ss_background_image || "";
-
 	      obj["category"] = fields.category;
+	      obj["cardAvatar"] = fields.cardAvatar;
+	      obj["world_id"] = fields.world_id;
+	      obj["series_id"] = fields.series_id;
+	      obj["season_id"] = fields.season_id;
 
 	      return obj;
     }
@@ -3076,15 +3083,23 @@ class MainPad extends React.Component {
         }
 
 		// Removing old count of episode from season
-		let newSeasonCount = seasonCount - episodeCount;
+		let newSeasonCount = (this.state.wordCount.bookTotal || seasonCount) - episodeCount;
 		// Removing old count of scene from episode
 		let newEpisodeCount = episodeCount - sceneCount;
+
+		this.setState({ isNoBookCount: false });
 
 		const sceneHTML = document.createElement("div");
 		sceneHTML.innerHTML = story;
 
 		if (sceneHTML) {
-			sceneCount = sceneHTML.innerText.split(/\s+/g).length;
+			sceneCount = 0;
+
+			Array.from(sceneHTML.children).forEach(ele => {
+				if (ele.innerText.trim()) {
+					sceneCount += ele.innerText.trim().split(/\s+/g).length;
+				}
+			});
 		}
 
 		// Adding new count of scene
@@ -3497,6 +3512,8 @@ class MainPad extends React.Component {
 			charFields['dna'] = fields.dna.val;
 		}
 
+		if (fields.cardAvatar) charFields["cardAvatar"] = fields.cardAvatar;
+
 		return charFields;
 	}
 
@@ -3580,9 +3597,15 @@ class MainPad extends React.Component {
 		let { world_id, series_id } = this.props.match.params;
 
 		newFields["category"] = type;
-		newFields["season_id"] = season_id;
-		newFields["series_id"] = series_id;
-		newFields["world_id"] = world_id;
+		if (!fields.season_id) {
+			newFields["season_id"] = season_id;
+		}
+		if (!fields.series_id) {
+			newFields["series_id"] = series_id;
+		}
+		if (!fields.world_id) {
+			newFields["world_id"] = world_id;
+		}		
 
 		this.handleRelationships(key, fields, newFields, type);
 
@@ -3597,6 +3620,36 @@ class MainPad extends React.Component {
 		} else if (newFields.dna && Object.entries(newFields.dna)[0] && !Object.entries(newFields.dna)[0][1].answer) {
 			delete newFields.dna;
 		}
+
+		let appearances = [];
+
+		if (newFields.name) {
+			const appearance = this.getAppearance(newFields.name);
+
+			if (appearance.length > 0) {
+				appearances = appearance.slice();
+			}
+		}
+
+		if (newFields.realAliases) {
+			newFields.realAliases.map(tag => {
+				const appearance = this.getAppearance(tag);
+
+			    if (appearance.length > 0) {
+				    if (appearance.length > 0) {
+					    appearance.slice().map(appear => {
+						    if (!appearance.includes(appear)) {
+							    appearances.push(appear);
+							}
+						});
+					} else {
+						appearances = appearance.slice();
+					}
+				}
+			});
+		}
+
+		this.updateBuilderAppearances(key, appearances);
 
 		const callback = (error, result) => {
 			if (error) {
@@ -3774,57 +3827,43 @@ class MainPad extends React.Component {
 
     CardClick = (type, key, data, socialChar) => {
 		data["appearance"] = [];
+		data["worldAppearance"] = [];
 		let appearances = [];
 
 		if (data.name.val) {
 			const appearance = this.getAppearance(data.name.val);
 
 			if (appearance.length > 0) {
-				data["appearance"] = appearance;
-				appearances = appearance;
+				data["appearance"] = appearance.slice();
+				appearances = appearance.slice();
 			}
 		}
 
-		if (data.aliases.has && data.aliases.tags) {
-			data.aliases.tags.map(tag => {
+		if (data.realAliases.has && data.realAliases.tags) {
+			data.realAliases.tags.map(tag => {
 				const appearance = this.getAppearance(tag);
 
 			    if (appearance.length > 0) {
 				    if (data["appearance"] && data["appearance"].length > 0) {
-					    appearance.map(appear => {
+					    appearance.slice().map(appear => {
 						    if (!data["appearance"].includes(appear)) {
 							    data["appearance"].push(appear);
 							    appearances.push(appear);
 							}
 						});
 					} else {
-						data["appearance"] = appearance;
-						appearances = appearance;
+						data["appearance"] = appearance.slice();
+						appearances = appearance.slice();
 					}
 				}
 			});
 		}
 
-		if (appearances.length > 0) {
-			const {
-				season_id, series_id, world_id
-			} = this.props.match.params;
+		this.updateBuilderAppearances(key, appearances);
 
-			const appear_data = {
-				season_id,
-				series_id,
-				world_id,
-				appearances: appearances
-			}
+		const { season_id } = this.props.match.params;
 
-			const appear_cb = (error, result) => {
-				if (error) {
-					console.log(error);
-				}
-			}
-
-			updateQueries.updateBuilderAppearances(key, season_id, appear_data, appear_cb);
-		}
+		this.getWorldAppearance(season_id, key);
 
 		if (type === "character") {
 			this.setState({
@@ -3849,6 +3888,58 @@ class MainPad extends React.Component {
 		}
 	}
 
+	updateBuilderAppearances = (builder_id, appearances) => {
+		const appear_cb = (error, result) => {
+			if (error) {
+				console.log(error);
+			}
+		}
+
+		const {
+			season_id, series_id, world_id
+		} = this.props.match.params;
+		const season = this.state.world.seasons[season_id];
+	    const season_name = season.name;
+
+		const appear_data = {
+			season_id,
+			series_id,
+			world_id,
+			season_name,
+			appearances: appearances.slice() || []
+		}
+
+		updateQueries.updateBuilderAppearances(builder_id, season_id, appear_data, appear_cb);
+	}
+
+	getWorldAppearance = (currentSeason_id, cardKey) => {
+		const { world_id } = this.props.match.params;
+
+		const cb = (error, result) => {
+			if (error) {
+				console.log(error);
+			} else {
+				result.data.forEach(data => {
+					this.setState(prevState => ({
+						...prevState,
+						charCardData: {
+							...prevState.charCardData,
+							worldAppearance: {
+								...prevState.charCardData.worldAppearance,
+								[data.data().season_id]: {
+									appearances: data.data().appearances, 
+									season_name: data.data().season_name
+								}
+							}
+						}
+					}));
+				})
+			}								
+		}
+
+		getQueries.getBuilderAppearancesWithWorld(cardKey, world_id, cb);
+	}
+
 	getAppearance = text => {
 	    let season_id = this.state.newSeasonId;
 		let appearance = [];
@@ -3860,19 +3951,23 @@ class MainPad extends React.Component {
 	    const { episodes } = this.state.world.seasons[season_id];
 		if (!episodes) return appearance;
 
-	    Object.entries(episodes).map( ([episodeKey, episode]) => {
+	    Object.entries(episodes)
+	    .sort(([epi_id1, epi_data1], [epi_id2, epi_data2]) => (epi_data1.sort || 0) - (epi_data2.sort || 0))
+	    .map( ([episodeKey, episode]) => {
 		    const { scenes } = episode;
 		    let count = 0;
 
 			if (!scenes) return appearance;
 
-		    Object.entries(scenes).map( ([sceneKey, scene]) => {
+		    Object.entries(scenes)
+		    .sort(([epi_id1, epi_data1], [epi_id2, epi_data2]) => (epi_data1.sort || 0) - (epi_data2.sort || 0))
+		    .map( ([sceneKey, scene]) => {
 			    count++;
 
 				let regE = null;
 
 				try {
-					regE = new RegExp('(^|\\W)' + text + '($|\\W)');
+					regE = new RegExp('(^|\\W)' + text.toLowerCase().trim() + '($|\\W)');
 				} catch(error) {
 					regE = null;
 
@@ -3887,25 +3982,30 @@ class MainPad extends React.Component {
 					});
 				}
 
-	          	if (scene.story && regE && scene.story.match(regE)) {
+	          	if (scene.story && regE && scene.story.toLowerCase().match(regE)) {
 		            const episodeName = episode.name;
 		            const sceneName = `${scene.name} ${count}`;
 
-		            if (appearance.findIndex(element => {
-		            	return (element.episode_id === episodeKey && element.scene_id === sceneKey)
-		            }) === -1) {
+		            const found = appearance.slice().find(element => 
+		            	element.episode_id === episodeKey && 
+		            	element.scene_id === sceneKey && 
+		            	element.text === text
+		            )
+
+		            if (!found) {
 		            	appearance.push({
 		            		episode_name: episodeName,
 		            		scene_name: sceneName,
 		            		episode_id: episodeKey,
-		            		scene_id: sceneKey
+		            		scene_id: sceneKey,
+		            		text: text
 		            	});
 		            }
 	          	}
 		    });
 	    });
 
-	    return appearance;
+	    return appearance.slice();
     }
 
 	openCardClick = (type) => {
@@ -4161,7 +4261,8 @@ class MainPad extends React.Component {
 									if (_scene_dom.querySelector(".html-edit").querySelectorAll("p")) {
 										_scene_dom.querySelector(".html-edit")
 										.querySelectorAll("p").forEach(_para => {
-											middle_html_content += `<p>${_para.innerText.replace(new RegExp("&amp;", "g"), "").replace(new RegExp("&", "g"), "and")}</p>`;
+											// middle_html_content += `<p>${_para.innerText.replace(new RegExp("&amp;", "g"), "").replace(new RegExp("&", "g"), "and")}</p>`;
+											middle_html_content += `<p>${_para.innerHTML.replace(new RegExp("&amp;", "g"), "").replace(new RegExp("&", "g"), "and")}</p>`;
 										})
 									}
 								}
@@ -4269,7 +4370,9 @@ class MainPad extends React.Component {
 				let html_html = `<html><head><style>{font: 12.0px Palatino}</style></head><body><div class=Section1><p align=\"center\" style='text-align:center'><strong>${season.name}</strong></p>`;
 
 				episodes && Object.entries(episodes).length > 0 && Object.entries(episodes)[0][1].key &&
-					Object.entries(episodes).map(([episodeKey, episode], index) => {
+					Object.entries(episodes)
+					.sort(([epi_id1, epi_data1], [epi_id2, epi_data2]) => (epi_data1.sort || 0) - (epi_data2.sort || 0))
+					.map(([episodeKey, episode], index) => {
 						const epiActualKey = episode.key;
 
 						if (!epiActualKey) return;
@@ -4289,7 +4392,9 @@ class MainPad extends React.Component {
 						const scenes = episode.scenes;
 
 						if (scenes && Object.entries(scenes).length > 0 && Object.entries(scenes)[0][1].key) {
-							Object.entries(scenes).map(([sceneKey, scene], index) => {
+							Object.entries(scenes)
+							.sort(([epi_id1, epi_data1], [epi_id2, epi_data2]) => (epi_data1.sort || 0) - (epi_data2.sort || 0))
+							.map(([sceneKey, scene], index) => {
 									const scActualKey = scene.key;
 
 									if (!scActualKey) return;
@@ -4370,43 +4475,6 @@ class MainPad extends React.Component {
 
 						alert("There is an error in export please try after sometime!");
 					});
-
-					/*axios.post(`https://cors-anywhere.herokuapp.com/${CLEAN_HTML}`, data, {
-						headers: headers
-					}).then(res => {
-						axios.post(`https://cors-anywhere.herokuapp.com/${EXPORT_DOCX_API}`,
-							{
-								html: res.data.retData
-							}, {
-							headers: headers
-						}).then(response => {
-							console.log(response)
-
-							let element = document.createElement('a');
-							element.setAttribute("href", response.data.target );
-
-							element.setAttribute('download', `beats-${new Date().getTime()}.docx`);
-
-							element.style.display = 'none';
-							document.body.appendChild(element);
-
-							element.click();
-
-							document.body.removeChild(element);
-						}).catch(error => {
-							console.log("Error ", error);
-
-							alert("There is an error in export please try after sometime!");
-						});
-					}).catch(error => {
-						console.log("Error ", error);
-
-						alert("There is an error in export please try after sometime!");
-					});*/
-
-					// const converted_html = htmlDocx.asBlob(html_html);
-
-					// saveAs(converted_html, `beats-${new Date().getTime()}.docx`);
 				} catch (e) {
 					console.log(e);
 
@@ -4706,8 +4774,8 @@ class MainPad extends React.Component {
 	      beatFields["name"] = fields.name;
 	      beatFields["key"] = fields.key;
 	      beatFields["created_date"] = fields.created_date;
-	      beatFields["notes"] = fields.notes;
-	      beatFields["summary"] = fields.summary;
+	      beatFields["notes"] = fields.notes || "";
+	      beatFields["summary"] = fields.summary || "";
 
 	      this.setState({
 		        openBeatCard: true,
@@ -5073,7 +5141,7 @@ class MainPad extends React.Component {
 			        const episodeId = ids[1];
 			        const epiActualId = ids[2];
 
-			        const list = Object.entries(this.state.world.seasons[season_id].episodes[episodeId].scenes);
+			        const list = Object.entries(this.state.world.seasons[season_id].episodes[episodeId].scenes).sort(([epi_id1, epi_data1], [epi_id2, epi_data2]) => (epi_data1.sort || 0) - (epi_data2.sort || 0));
 
 			        const items = reorderBeat(
                     	list,
@@ -5193,7 +5261,6 @@ class MainPad extends React.Component {
 							update_date: item[1].update_date || "",
 							summary: item[1].summary || "",
 							notes: item[1].notes || "",
-							scenes: item[1].scenes || {},
 							pulse: item[1].pulse || "",
 							sort: index,
 						}
@@ -5369,7 +5436,7 @@ class MainPad extends React.Component {
 									let scenee = sceness[sceActualId];
 									if (!scenee) return;
 
-									let list = Object.entries(this.state.world.seasons[season_id].episodes[episodeId].scenes);
+									let list = Object.entries(this.state.world.seasons[season_id].episodes[episodeId].scenes).sort(([epi_id1, epi_data1], [epi_id2, epi_data2]) => (epi_data1.sort || 0) - (epi_data2.sort || 0));
 
 									let items = remove(
 										list,
@@ -5558,8 +5625,8 @@ class MainPad extends React.Component {
 					if (!this.state.world.seasons[destination_season_id]) return;
 					if (!this.state.world.seasons[destination_season_id].episodes) return;
 
-			        let sourceList = Object.entries(this.state.world.seasons[source_season_id].episodes);
-			        let destinationList = Object.entries(this.state.world.seasons[destination_season_id].episodes);
+			        let sourceList = Object.entries(this.state.world.seasons[source_season_id].episodes).sort(([epi_id1, epi_data1], [epi_id2, epi_data2]) => (epi_data1.sort || 0) - (epi_data2.sort || 0));
+			        let destinationList = Object.entries(this.state.world.seasons[destination_season_id].episodes).sort(([epi_id1, epi_data1], [epi_id2, epi_data2]) => (epi_data1.sort || 0) - (epi_data2.sort || 0));
 
 			        const items = move(
                     	sourceList,
@@ -5663,8 +5730,8 @@ class MainPad extends React.Component {
 			        const destination_episodeId = destinationIDS[1];
 			        const destination_epiActualId = destinationIDS[2];
 
-			        const sourceList = Object.entries(this.state.world.seasons[season_id].episodes[episodeId].scenes);
-			        const destinationList = Object.entries(this.state.world.seasons[destination_season_id].episodes[destination_episodeId].scenes);
+			        const sourceList = Object.entries(this.state.world.seasons[season_id].episodes[episodeId].scenes).sort(([epi_id1, epi_data1], [epi_id2, epi_data2]) => (epi_data1.sort || 0) - (epi_data2.sort || 0));
+			        const destinationList = Object.entries(this.state.world.seasons[destination_season_id].episodes[destination_episodeId].scenes).sort(([epi_id1, epi_data1], [epi_id2, epi_data2]) => (epi_data1.sort || 0) - (epi_data2.sort || 0));
 
 			        const items = move(
                     	sourceList,
@@ -5993,14 +6060,10 @@ class MainPad extends React.Component {
 	    const { worldBarFilter } = this.state;
 
 	    let matchWith = {
-	    	world_id: worldBarFilter[worldBarFilter.selectedFilter].id
+	    	world_id: this.props.match.params.world_id
 	    }
 
-	    if (worldBarFilter.selectedFilter === "showInSeason") {
-	    	matchWith = {
-		    	season_id: worldBarFilter[worldBarFilter.selectedFilter].id
-		    }
-	    } else if (worldBarFilter.selectedFilter === "showInSeries") {
+	    if (worldBarFilter.selectedFilter === "showInSeries") {
 	    	matchWith = {
 		    	series_id: worldBarFilter[worldBarFilter.selectedFilter].id
 		    }
@@ -6052,9 +6115,13 @@ class MainPad extends React.Component {
 					    }
 
 					    if (cmp[whichFields]) {
-							cmp[whichFields][crd_id] = this.state[whichInitFields][crd_id] || {};
+					    	if (this.state[whichInitFields][crd_id]) {
+					    		cmp[whichFields][crd_id] = this.state[whichInitFields][crd_id] || {};
+					    	}
 						} else {
-							cmp[whichFields] = {[crd_id]: this.state[whichInitFields][crd_id]} || {};
+							if (this.state[whichInitFields][crd_id]) {
+								cmp[whichFields] = {[crd_id]: this.state[whichInitFields][crd_id]} || {};
+							}
 						}
 		    		});
 
@@ -6105,6 +6172,9 @@ class MainPad extends React.Component {
 	}
 
 	expandBeat = value => {
+		if (value === "pov" && this.state.showLite) {
+			return this.setState({ commentProOpen: true });
+		}
 		this.setState({ summ_expand: value, showOneSumm: {}, showExpndOneSumm: {} });
 	}
 
@@ -6345,7 +6415,7 @@ class MainPad extends React.Component {
     renderRight() {
         const {
         	openBuilderPop, builderChecks, realChecks, world, worldBarFilter, showWBFilter,
-		    newSeasonId, writeAccess, search, world_name, showLite, worldBarLoading
+		    newSeasonId, writeAccess, search, world_name, showLite, worldBarLoading, filterLoading
 		} = this.state;
 
 	    let season = {name: ""};
@@ -6375,10 +6445,6 @@ class MainPad extends React.Component {
 		                   				{
 		                   					worldBarFilter.selectedFilter === "showInWorlds" && (
 		                   						<img src={world_filter_icon} alt="worldBar icon" />
-
-
-
-
 		                   					)
 		                   				}
 
@@ -6399,10 +6465,7 @@ class MainPad extends React.Component {
 		                   				{
 		                   					worldBarFilter[worldBarFilter.selectedFilter].name
 		                   				}
-															<span className="fixed-hov-ob">Filter World Bar</span>
-
-
-
+										<span className="fixed-hov-ob">Filter World Bar</span>
 		                   			</div>
 
 		                   			<span className='drp-icn'>
@@ -6417,11 +6480,20 @@ class MainPad extends React.Component {
 		                   		</div>
 
 		                   		{
-		                   			showWBFilter && (
+		                   			showWBFilter ? filterLoading ? (
+		                   				<center>
+				          					<img src={loadingGF} alt="loading..." />
+
+				          					<h4>Please wait while we are filtering your content. It may take time than usual. Thanks for your patience.</h4>
+				        				</center>
+		                   			)
+		                   			:
+		                   			(
 		                   				<div className='drp-lst'>
 				                   			<div className='slt-name' onClick={() => this.changeWorldBar("showInWorlds")}>
-					                   			<span className='icn-name'>
+					                   			<span className='wld-icn icn-name'>
 					                   				<img src={world_filter_icon} alt="worldBar icon" />
+					                   				<span className="fixed-hov-ob">Filter World Bar by Entire World</span>
 					                   			</span>
 					                   			<span className='rel-name'>
 					                   				{
@@ -6431,8 +6503,9 @@ class MainPad extends React.Component {
 					                   		</div>
 
 					                   		<div className='slt-name' onClick={() => this.changeWorldBar("showInSeries")}>
-					                   			<span className='icn-name'>
+					                   			<span className='sr-icn icn-name'>
 					                   				<img src={series_filter_icon} alt="worldBar icon" />
+					                   				<span className="fixed-hov-ob">Filter World Bar by Current Series</span>
 					                   			</span>
 					                   			<span className='rel-name'>
 					                   				{
@@ -6442,8 +6515,9 @@ class MainPad extends React.Component {
 					                   		</div>
 
 					                   		<div className='slt-name' onClick={() => this.changeWorldBar("showInSeason")}>
-					                   			<span className='icn-name'>
+					                   			<span className='bk-icn icn-name'>
 					                   				<img src={book_filter_icon} alt="worldBar icon" />
+					                   				<span className="fixed-hov-ob">Filter World Bar by Current Book</span>
 					                   			</span>
 					                   			<span className='rel-name'>
 					                   				{
@@ -6463,7 +6537,7 @@ class MainPad extends React.Component {
 					                   			</span>
 					                   		</div>*/}
 				                   		</div>
-		                   			)
+		                   			) : null
 		                   		}
 					        </div>
 
@@ -6517,19 +6591,13 @@ class MainPad extends React.Component {
 											                        */}{
 											                        	this.state[whichFields] && Object.entries(this.state[whichFields])
 											                        	.sort(([charKey1, char1], [charKey2, char2]) => {
-											                        		if (char1.appearance && char2.appearance && char1.appearance.length > 0 && char2.appearance.length > 0) {
-											                        			if (char1.appearance.length < char2.appearance.length) return -1;
-																				if (char1.appearance.length > char2.appearance.length) return 1;
-																				return 0;
-											                        		}
-											                        		// console.log(char1.appearance, char2.appearance);
-
-											                        		if (char1.name.val.toLowerCase() < char2.name.val.toLowerCase()) return -1;
-																			if (char1.name.val.toLowerCase() > char2.name.val.toLowerCase()) return 1;
+											                        		if (char1 && char1.name && char1.name.val.toLowerCase() < char2 && char2.name && char2.name.val.toLowerCase()) return -1;
+																			if (char1 && char1.name &&char1.name.val.toLowerCase() > char2 && char2.name && char2.name.val.toLowerCase()) return 1;
 																			return 0;
 											                        	})
 											                        	.map(([charKey, char], index) => {
 																			const dd = JSON.parse(JSON.stringify(char));
+																			if (!dd) return null;
 																			return (
 															                    <Draggable key={charKey} draggableId={charKey} type={this.state.itemExpand[item] ? "ABC" : "typeChange"} index={index}>
 															                        {(provided, snapshot) => {
@@ -6550,13 +6618,13 @@ class MainPad extends React.Component {
 
 																	                            	<div className='char-prf-crl'>
 																										{
-																											char && char.photo && char.photo.has && char.photo.val && char.photo.val[0] ? (
+																											char && char.cardAvatar ? (
 																												<img className='char-prf-avtr' style={
 																													{height: '50px', width: '50px', borderRadius: '50%'}
 																												} src={
-																													char.photo.val && char.photo.val[0] && char.photo.val[0].url
+																													char.cardAvatar.url
 																												} alt={
-																													char.photo.val && char.photo.val[0] && char.photo.val[0].name
+																													char.cardAvatar.name
 																												} />
 																											) : (
 																												<Avatar size="50px" style={
@@ -6588,7 +6656,9 @@ class MainPad extends React.Component {
 												                                <Button className="bt-new-btn ltl-grn" color="primary"
 												                                    aria-label="Add" onClick={() => this.openCardClick(item)}>
 													                                    <AddIcon />
+																															<span className="fixed-hov-ob">Add New World Card</span>
 												                                </Button>
+
 											                                </div>
 											                            )
 												                    }
@@ -6758,18 +6828,19 @@ class MainPad extends React.Component {
 							<div ref={(node) => this.setWrapperRef("remove_pop", node)}
 							className='pad-setting pad-recover'>
 								<div className='rm-btn' onClick={() => this.handlePop("trash_recover")}>
-									<i className="fa fa-cogs"></i>
+									<img src={exit_tool} />
+									<span className='fixed-hov-ob'>Tools</span>
 								</div>
 
 								{
 									this.state.trash_recover && (
 										<div className="setting-pop trash">
-											<div className='trash-box' onClick={() => this.showTrashRecover()}>
+											<div className='cmn-trash-bx trash-box' onClick={() => this.showTrashRecover()}>
 												<span className='bx-icn'><i className="fas fa-trash-alt"></i></span>
 												<span className='bx-txt'>Recover Trash Can</span>
 											</div>
 
-											<div className='wizard-box' onClick={() => this.showWorldWizard()}>
+											<div className='cmn-trash-bx wizard-box' onClick={() => this.showWorldWizard()}>
 												<span className='bx-icn'><i className="fas fa-globe-africa"></i></span>
 												<span className='bx-txt'>World Wizard</span>
 												{showLite && (<UpgradePop />)}
@@ -6971,6 +7042,7 @@ class MainPad extends React.Component {
 											  season_id={season_id}
 											  world_name={world_name}
 											  seriesList={seriesList}
+											  getAppearance={this.getAppearance}
 											  appendNewScene={this.appendNewScene}
 											  appendNewEpisode={this.appendNewEpisode}
 											  cloneNewScene={this.cloneNewScene}
@@ -6993,6 +7065,7 @@ class MainPad extends React.Component {
 											  expandButtons={this.state.expandButtons}
 											  charFields={charFields}
 											  settingFields={settingFields}
+											  state={this.state}
 							                />
 							               ) : (
 							               		<BeatBar

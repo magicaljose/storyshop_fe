@@ -137,7 +137,9 @@ class ComonUpdateFields extends React.Component {
 
     return (
       <div>
-        <Fab aria-label="Add" className="bt-new-btn lgt-shadow" onClick={openModal(openWhichUpdate)}><AddIcon /></Fab>
+        <Fab aria-label="Add" className="bt-new-btn lgt-shadow" onClick={openModal(openWhichUpdate)}><AddIcon />
+           <span className="fixed-hov-ob">Add/Remove World Card Fields</span>
+				</Fab>
 
 		    <Popup className='popup-content-t' open={open} onClose={closeModal(openWhichUpdate)} modal closeOnDocumentClick >
 			<Scrollbars className='cmn-lsts' autoHide autoHideDuration={200}>

@@ -68,7 +68,7 @@ class SeasonView extends React.Component {
 
 	saveWhenStop = id => event => {
 		const { writeAccess } = this.props;
-		
+
 		if (!writeAccess) return;
 
 		if (this.timmer) {
@@ -189,7 +189,7 @@ class SeasonView extends React.Component {
             handleSeasonEdit, handleEpisodeEdit, handleSceneEdit,
             newSeasonId
         } = this.props;
-	    
+
 	    const obj = JSON.parse(id);
         const { episodeId, sceneId } = obj;
         const seasonId = obj.season;
@@ -255,7 +255,7 @@ class SeasonView extends React.Component {
 				this.commentHighlight[cmnt_id] = setTimeout(() => {
 					document.getElementById(cmnt_id).style.animation = "";
 				}, 1000);
-			}			
+			}
 
 			this.setState(prevState => ({
 				...prevState,
@@ -303,7 +303,7 @@ class SeasonView extends React.Component {
 				const comment_chat_id = result.key;
 
 				const readData = {
-					last_chat_comment: comment_chat_id, 
+					last_chat_comment: comment_chat_id,
 					last_chat_comment_by: user_id
 				}
 
@@ -316,10 +316,10 @@ class SeasonView extends React.Component {
 
 		if (this.state.new_comment && this.state.toggleOnlyForNow) {
 			this.props.toggleComment();
-			this.setState({ 
-				toggleOnlyForNow: false, 
-				new_comment: false, 
-				selfComment: {} 
+			this.setState({
+				toggleOnlyForNow: false,
+				new_comment: false,
+				selfComment: {}
 			});
 		}
 	}
@@ -469,7 +469,7 @@ class SeasonView extends React.Component {
 				if (prev_comment_index === 0) //return;
 				{
 					new_comment_id = arrayCommentsList[arrayCommentsList.length-1][0];
-				} else { 
+				} else {
 					new_comment_id = arrayCommentsList[prev_comment_index-1][0];
 				}
 		    	this.setState({ selfComment: {} });
@@ -481,18 +481,18 @@ class SeasonView extends React.Component {
 		      	event.preventDefault();
 		        let new_comment_id = '';
 		      	if (prev_comment_index === arrayCommentsList.length-1) //return;
-		      	
+
 				{
 					new_comment_id = arrayCommentsList[0][0];
 				}
-				else { 
+				else {
 					new_comment_id = arrayCommentsList[prev_comment_index+1][0];
 				}
 		      	this.setState({ selfComment: {} });
 
 		    	this.showDoCommentBox(scene_id, new_comment_id);
 		    }
-		}		
+		}
 	}
 
 	renderDoCommentBox = (scene_id, cmnt_id, resolved) => {
@@ -503,18 +503,18 @@ class SeasonView extends React.Component {
 				{
 					showElipse ? (
 						<div className='main-cmt-elp'>
-							<div className='fx-cls' 
+							<div className='fx-cls'
 							  onClick={() => this.showDoCommentBox(scene_id, cmnt_id)}>
 								<i className="fa fa-times"></i>
 							</div>
 
 							<div className='elp-btns'>
-								<div className='elp-hl' 
+								<div className='elp-hl'
 								  onClick={() => this.highlightComment(scene_id, cmnt_id)}>
 								  	Highlight Comment
 								</div>
 
-								<div className='elp-hl elp-dc' 
+								<div className='elp-hl elp-dc'
 								  onClick={() => this.deleteComment(scene_id, cmnt_id)}>
 								  	Delete Comment
 								</div>
@@ -534,9 +534,10 @@ class SeasonView extends React.Component {
 
 										<span className='rslv-txt'>Comment Resolved</span>
 				            		</div>
-				            								
+
 				            		<div className='oth-bx' onClick={() => this.openCommentElips(cmnt_id)}>
 				            			<i className="fa fa-ellipsis-v elps"></i>
+													 <span className="fixed-hov-ob">Delete/Highlight Comments</span>
 				            		</div>
 				            	</div>
 				            )}
@@ -554,8 +555,8 @@ class SeasonView extends React.Component {
 				            </div>
 
 			            	<div className='rpl-bx'>
-			            		<input disabled={resolved} autoFocus type="text" placeholder="Reply" onChange={this.changeCommentInput} 
-			            		  onKeyDown={this.doOnKeyDown(scene_id, cmnt_id)} value={this.state.commentInput} 
+			            		<input disabled={resolved} autoFocus type="text" placeholder="Reply" onChange={this.changeCommentInput}
+			            		  onKeyDown={this.doOnKeyDown(scene_id, cmnt_id)} value={this.state.commentInput}
 			            		/>
 			            	</div>
 						</div>
@@ -567,8 +568,8 @@ class SeasonView extends React.Component {
 
     renderNewScenes = (episodeKey, sceneKey, index) => {
         const {
-            handleChange, handleEditorChange, handleSceneClick, beatStyles, 
-            setScrollRef, newSeasonId, commentsList, showComments, suggestorState, 
+            handleChange, handleEditorChange, handleSceneClick, beatStyles,
+            setScrollRef, newSeasonId, commentsList, showComments, suggestorState,
             toggleSuggestor, handleInput, suggestorSelection,
         } = this.props;
 
@@ -645,7 +646,7 @@ class SeasonView extends React.Component {
 									'worldbuilder': new this.CreateWorldBuilder(),
 									'justifyText': new JustifyText(),
 									'comment': new CommentButton({
-										scene_id: sceneKey, 
+										scene_id: sceneKey,
 										showDoCommentBox: this.showDoCommentBox,
 										toggleComment: this.toggleComment
 									}),
@@ -688,7 +689,7 @@ class SeasonView extends React.Component {
 							            	suggestorData.cmp && Object.entries(suggestorData.cmp).map(([fieldKey, fields]) => {
 							            		return Object.entries(fields).map(([f_id, data], index_key) => {
 							            			return (
-							            				<div key={index_key} className={`item-ref ${f_id === suggestorData.selected_item ? "active" : ""}`} 
+							            				<div key={index_key} className={`item-ref ${f_id === suggestorData.selected_item ? "active" : ""}`}
 							            				  data-element={f_id} card-category={data.category}
 							            				  onClick={() => suggestorSelection(sceneKey, f_id)}
 										                  style={{
@@ -712,7 +713,7 @@ class SeasonView extends React.Component {
 							    	showComments && (
 							    		<div className='comments-lst'>
 									    	{
-										    	commentsList[sceneKey] && 
+										    	commentsList[sceneKey] &&
 										    	Object.entries(comnts_comnts).map(([tp, tp_lst], index_key) => {
 										    		return(
 										    		<div key={index_key} className='on-cmnt' style={{marginTop: `${tp - 10}px`}}>
@@ -723,17 +724,17 @@ class SeasonView extends React.Component {
 
 													    		if (!dd.isResolved) {
 													    			count++;
-													    		}									    		
+													    		}
 
 													    		return (
 														    		<div key={cmnt_id} data-ref-pos={dd.offset_position} className='main-cmnts'>
-																		<div className={`cmnt-prt-bx ${dd.isHighLight ? 'hl-cmnt' : 
-																		''} ${dd.isResolved ? 'rslv-dn' : ''}`} 
+																		<div className={`cmnt-prt-bx ${dd.isHighLight ? 'hl-cmnt' :
+																		''} ${dd.isResolved ? 'rslv-dn' : ''}`}
 																		onClick={() => this.showDoCommentBox(sceneKey, cmnt_id)}>
 																			<span className='main-bx'>
 																				<i className="material-icons">chat_bubble</i>
 																			</span>
-																			
+
 																			<span className='nmbr-cnt'>
 																				{
 																				    dd.isResolved ? (
@@ -760,7 +761,7 @@ class SeasonView extends React.Component {
 							    	/*showComments && (
 							    		<div className='comments-lst'>
 									    	{
-									    		commentsList[sceneKey] && 
+									    		commentsList[sceneKey] &&
 									    		Object.entries(commentsList[sceneKey])
 									    		.sort(([cmnt_id1, dd1], [cmnt_id2, dd2]) => dd1.offset_position - dd2.offset_position)
 									    		.map(([cmnt_id, dd]) => {
@@ -770,13 +771,13 @@ class SeasonView extends React.Component {
 
 										    		return (
 											    		<div key={cmnt_id} data-ref-pos={dd.offset_position} className='main-cmnts'>
-															<div className={`cmnt-prt-bx ${dd.isHighLight ? 'hl-cmnt' : 
-															''} ${dd.isResolved ? 'rslv-dn' : ''}`} 
+															<div className={`cmnt-prt-bx ${dd.isHighLight ? 'hl-cmnt' :
+															''} ${dd.isResolved ? 'rslv-dn' : ''}`}
 															onClick={() => this.showDoCommentBox(sceneKey, cmnt_id)}>
 																<span className='main-bx'>
 																	<i className="material-icons">chat_bubble</i>
 																</span>
-																
+
 																<span className='nmbr-cnt'>
 																	{
 																	    dd.isResolved ? (
@@ -796,7 +797,7 @@ class SeasonView extends React.Component {
 									    </div>
 							    	)*/
 							    }
-					    	</div>					    
+					    	</div>
 
 		                	{
 		                		sceneKeys.length - 1 !== index && (
@@ -845,12 +846,12 @@ class SeasonView extends React.Component {
                 </div>
 
                 <div className='main-scene-container'>
-                    { 
+                    {
                         Object.entries(scenes)
                         .sort(([epi_id1, epi_data1], [epi_id2, epi_data2]) => (epi_data1.sort || 0) - (epi_data2.sort || 0))
-                        .map( ([sceneKey, sceneData], index) => this.renderNewScenes(episodeKey, sceneKey, index) ) 
+                        .map( ([sceneKey, sceneData], index) => this.renderNewScenes(episodeKey, sceneKey, index) )
                     }
-                </div> 
+                </div>
             </div>
         )
     }
@@ -868,7 +869,7 @@ class SeasonView extends React.Component {
 
 	    if (world && Object.keys(world.seasons).length > 0) {
 		    season = world.seasons[newSeasonId];
-		    
+
 		    if (!season) {
 				return (
 					<center>
@@ -915,11 +916,11 @@ class SeasonView extends React.Component {
                                 <div className={`main-episode-container editor-season${newSeasonId}`}>
                                     {/*showEpisode ? this.renderNewEpisode(showEpisode) : Object.keys(episodes).length > 0 && Object.keys(episodes).map( (episodeKey) => this.renderNewEpisode(episodeKey) ) */}
 									{
-										episodes ? 
+										episodes ?
 											Object.entries(episodes)
 											.sort(([epi_id1, epi_data1], [epi_id2, epi_data2]) => (epi_data1.sort || 0) - (epi_data2.sort || 0))
 										  	  .map( ([episodeKey, episodeData]) => this.renderNewEpisode(episodeKey) )
-										: 
+										:
 											(
 												<center>
 													<img src={loadingGF} alt="loading..." />

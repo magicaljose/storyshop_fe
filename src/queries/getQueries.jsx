@@ -332,6 +332,14 @@ const getBuilderWithDoc = (builder_id, cb) => {
 	});
 }
 
+const getAllBuildersWithWorld_id = (world_id, cb) => {
+	builder.where("world_id", "==", world_id).get().then(snapshot => {
+		return cb(null, {status: 1, data: snapshot});
+	}).catch(error => {
+		return cb({status: 0, message: "Error in query!"}, null);
+	});
+}
+
 const getBuildersWithWorld_id = (category, world_id, cb) => {
 	builder.where("category", "==", category).where("world_id", "==", world_id).get().then(snapshot => {
 		return cb(null, {status: 1, data: snapshot});
@@ -385,6 +393,17 @@ const getBuilderAppearances = (builder_id, season_id, cb) => {
 			return cb(null, {status: 0, data: snapshot});
 		}
 	}).catch(error => {
+		return cb({status: 0, message: "Error in query!"}, null);
+	});
+}
+
+const getBuilderAppearancesWithWorld = (builder_id, world_id, cb) => {
+	builder.doc(builder_id).collection("appearances")
+	.where("world_id", "==", world_id)
+	.get().then(snapshot => {
+		return cb(null, {status: 1, data: snapshot});
+	}).catch(error => {
+		console.log(error);
 		return cb({status: 0, message: "Error in query!"}, null);
 	});
 }
@@ -533,8 +552,8 @@ export default {
 	getSeriesWordCountDoc, getSeriesWordCount, 
 	getWorldWordCountDoc, getWorldWordCount,
 	// Builders
-	getBuilderWithDoc, getBuildersWithWorld_id, getBuildersWithSeries_id, getBuildersWithSeason_id,
-	getBuilderRelationships, getBuilderRelation, getBuilderAppearances,
+	getBuilderWithDoc, getAllBuildersWithWorld_id, getBuildersWithWorld_id, getBuildersWithSeries_id, getBuildersWithSeason_id,
+	getBuilderRelationships, getBuilderRelation, getBuilderAppearances, getBuilderAppearancesWithWorld,
 	// DNA Questions
 	getDnaQuestions,
 	// Chats

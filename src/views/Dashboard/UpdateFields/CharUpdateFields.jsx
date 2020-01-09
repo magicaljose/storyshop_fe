@@ -178,7 +178,9 @@ class CharUpdateFields extends React.Component {
 
     return (
       <div>
-        <Fab className="bt-new-btn lgt-shadow" onClick={openModal("openCharUpdate")} color="primary" aria-label="Add"> <AddIcon /> </Fab>
+        <Fab className="bt-new-btn lgt-shadow" onClick={openModal("openCharUpdate")} color="primary" aria-label="Add"> <AddIcon />
+				<span className="fixed-hov-ob">Add/Remove World Card Fields</span>
+				 </Fab>
 
 		    <Popup className='popup-content-t' open={open} onClose={closeModal("openCharUpdate")} modal closeOnDocumentClick >
 			<Scrollbars className='cmn-lsts' autoHide autoHideDuration={200}>

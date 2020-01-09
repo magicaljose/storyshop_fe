@@ -4,6 +4,7 @@ import secureStorage from 'secureStorage';
 import { Redirect } from "react-router-dom";
 import { confirmAlert } from 'react-confirm-alert';
 import 'assets/css/react-confirm-alert.css';
+import moment from "moment";
 
 import axios from 'axios';
 
@@ -41,87 +42,14 @@ class HandleUser extends React.Component {
   componentDidMount = () => {
       const query = queryString.parse(this.props.location.search);
 
+      	let now = moment();
+		let nowIn = now.clone().add(24, 'hours').toDate();
+
+		const exp_token = new Date(nowIn).getTime();
+
       if (localStorage.getItem('storyShop_uid')) {
         return;
       }
-
-      if (!query.upc) {
-      	window.location.assign(config.HOST_URL + "/account/");
-      } else {
-      	const email = query.upc;
-
-      	const usDB = (error, result) => {
-      		if (error) {
-				console.log(error);
-			} else {
-				if (result.data.docs.length > 0) {
-					result.data.forEach(snap => {
-						const data = snap.data();
-						const uid = snap.id;
-
-						const user_name = data.user_name || email;
-						localStorage.setItem("storyShop_user_name", user_name);
-						const created_date = data.created_date;
-						let account_type = data.account_type;
-						const expire_date = data.expire_date || "";
-						const isNewUser = data.isNewUser || false;
-						const doNotShowAgain = data.doNotShowAgain || false
-
-						if (!account_type || account_type === "Trail") {
-							account_type = "Lite";
-						}
-						if (account_type === "Pro") {
-							if (expire_date) {
-							  const today = new Date(data.lastSignInTime);
-							  const exp = new Date(expire_date);
-
-							  const callback = (err, res) => {
-								if (err) {
-									console.log(err);
-								} 
-								else
-								{
-									localStorage.setItem("storyShop_uid", uid);
-									secureStorage.setItem("storeToken", {
-									user_id: uid,
-									user_name: user_name,
-									account_type: "Lite",
-									expire_date,
-									account_created_date: created_date,
-									isNewUser,
-									doNotShowAgain
-								  });
-									this.setState({ user_in: true });
-								}
-							  }
-							  if (today > exp) {
-								  const fields = {
-									account_type: "Lite"
-								};
-							  updateQueries.updateUser(uid, fields, callback);
-							  }
-							}
-						}
-						localStorage.setItem("storyShop_uid", uid);
-						secureStorage.setItem("storeToken", {
-							user_id: uid,
-							user_name: user_name,
-							account_type: account_type,
-							expire_date,
-							account_created_date: created_date,
-							isNewUser,
-							doNotShowAgain
-						});
-						this.setState({ user_in: true });
-					})
-				}
-			}
-		}
-
-		getQueries.getUserWithEmail_id(email, usDB);
-      }
-
-      return;
 
       if (!query.upc || !query.wcp) {
         // redirect again to login page
@@ -180,7 +108,8 @@ class HandleUser extends React.Component {
 									expire_date,
 									account_created_date: created_date,
 									isNewUser,
-									doNotShowAgain
+									doNotShowAgain,
+									exp: exp_token
 								  });
 									this.setState({ user_in: true });
 								}
@@ -201,7 +130,8 @@ class HandleUser extends React.Component {
 							expire_date,
 							account_created_date: created_date,
 							isNewUser,
-							doNotShowAgain
+							doNotShowAgain,
+							exp: exp_token
 						});
 						this.setState({ user_in: true });
 					}

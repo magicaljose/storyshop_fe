@@ -1,11 +1,13 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import secureStorage from 'secureStorage';
 import { withStyles } from '@material-ui/core/styles';
 import { Switch, Route, Redirect } from 'react-router-dom';
 
 // creates a beautiful scrollbar
 import PerfectScrollbar from 'perfect-scrollbar';
 import "perfect-scrollbar/css/perfect-scrollbar.css";
+import config from 'views/config.js';
 
 import { Header } from 'components';
 
@@ -84,6 +86,25 @@ class App extends React.Component{
 
   getRoute(){
     return this.props.location.pathname !== "/maps";
+  }
+
+  componentWillMount() {
+    let token = secureStorage.getItem("storeToken");
+
+      if (token) {
+        if (token.exp) {
+            if (token.exp < new Date().getTime()) {
+                localStorage.clear();
+
+                window.location.assign(config.HOST_URL + "/account/");
+            }
+        } else {
+            localStorage.clear();
+            secureStorage.clear();
+
+            window.location.assign(config.HOST_URL + "/account/");
+        }
+      }
   }
 
   componentDidMount(){

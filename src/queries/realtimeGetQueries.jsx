@@ -301,6 +301,20 @@ const getBuildersWithSeason_id = (category, season_id, cb) => {
 	return builder;
 }
 
+const getBuilderAppearances = (builder_id, season_id, cb) => {
+	const builder = firestoreDb.collection("builder")
+	.doc(builder_id).collection("appearances").doc(season_id)
+	.onSnapshot(snapshot => {
+		if (snapshot.exists) {
+			return cb(null, {status: 1, data: snapshot.data()});
+		} else {
+			return cb(null, {status: 0, data: snapshot});
+		}
+	});
+
+	return builder;
+}
+
 // Functions for Preen Integration Assistant
 const getCardAssistant = (season_id, cb) => {
 	const seasons = firestoreDb.collection("seasons").doc(season_id).collection("card_assistant")
@@ -334,7 +348,7 @@ export default {
 	// Background Settings
 	getBackgroundSettingWithUserid,
 	// Builders
-	getBuildersWithWorld_id, getBuildersWithSeries_id, getBuildersWithSeason_id,
+	getBuildersWithWorld_id, getBuildersWithSeries_id, getBuildersWithSeason_id, getBuilderAppearances,
 	// Preen Integration Assistant
 	getCardAssistant
 }

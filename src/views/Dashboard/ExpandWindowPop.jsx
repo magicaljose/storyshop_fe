@@ -2,7 +2,7 @@ import React from 'react';
 import Popup from "reactjs-popup";
 
 //// Material Components ////
-import { 
+import {
 	TextField, Button
 } from '@material-ui/core';
 ////////////////////////////
@@ -35,7 +35,7 @@ import setQueries from 'queries/setQueries';
 const numberWithCommas = (number) => {
     let parts = number.toString().split(".");
     parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-    
+
     return parts.join(".");
 }
 
@@ -90,19 +90,19 @@ class ExpandWindowPop extends React.Component {
 		  			this.getSceneBeats(windowOf.episode_id, windowOf.scene_id);
 		  		} else {
 		  			this.getBeats(windowOf.episode_id);
-		  		} 	
+		  		}
 			} else {
 				this.setState(this.defaultState);
 			}
 		}
 	}
-	
+
 	getSceneBeats = (episode_id, scene_id) => {
 		const user_id = localStorage.getItem("storyShop_uid");
 		let flag = false;
 		let newMessages = 0;
-		
-		const cb = (error, results) => { 
+
+		const cb = (error, results) => {
 			if (error) {
 	  			console.log(error);
 	  		} else {
@@ -128,10 +128,10 @@ class ExpandWindowPop extends React.Component {
   	getBeats = (episode_id) => {
 		const user_id = localStorage.getItem("storyShop_uid");
 
-		let flag = false; 
+		let flag = false;
 		let newMessages = 0;
-		
-		const callback = (error, results) => { 
+
+		const callback = (error, results) => {
 			if (error) {
 	  			console.log(error);
 	  		} else {
@@ -245,7 +245,7 @@ class ExpandWindowPop extends React.Component {
 
     	return {
     		newMessages: messages || "",
-    		flag: flag 
+    		flag: flag
     	};
     }
 
@@ -351,7 +351,7 @@ class ExpandWindowPop extends React.Component {
     	const { windowOf } = this.props;
 
     	const { scene_id, episode_id, season_id } = windowOf;
-		
+
 		let fields = {
 			name: data.name || "",
 			pulse: data.pulse || "",
@@ -385,9 +385,9 @@ class ExpandWindowPop extends React.Component {
 
 			updateQueries.updateScene(scene_id, fields, callback);
 		} else {
-		    updateQueries.updateEpisode(episode_id, fields, callback);	
+		    updateQueries.updateEpisode(episode_id, fields, callback);
 		}
-		
+
     }
 
 	render() {
@@ -407,7 +407,7 @@ class ExpandWindowPop extends React.Component {
 		return (
 			<Popup open={open} onClose={closeModal} closeOnDocumentClick className='main-expand-pop'>
 				<Scrollbars className='cmn-bb-crd'>
-				{scene_id ? 
+				{scene_id ?
 		  			(
 					  	<div className="main_col_sc">
 			  				<div key={id} data-element={scene_id} className='sc-bx'>
@@ -421,16 +421,16 @@ class ExpandWindowPop extends React.Component {
 													<span>{numberWithCommas(data.count || 0)}</span>
 												</div>
 											</div>
-											
+
 										    <div className='cl35'>
-						                        <div className='cl5'>	
+						                        <div className='cl5'>
 						                        	<div className='cl7'>
 														<img src={pulse_img} alt="pulse..." />
-												    </div>								
+												    </div>
 													<span className='txt-pd ch-size'>
 														<input
 												            rows="1"
-															className={`cptxt15`} name="pulse" value={data.pulse || ""} 
+															className={`cptxt15`} name="pulse" value={data.pulse || ""}
 															onChange={this.handleChange(id, scene_id)}
 															maxLength="50"
 															placeholder="Pulse"
@@ -448,6 +448,7 @@ class ExpandWindowPop extends React.Component {
 																	<img src={chapter_selected_img} alt="BeatsModeimg..." />
 																)
 															}
+															<span className="fixed-hov-ob">Expand Beats Summary</span>
 														</button>
 
 														{
@@ -486,12 +487,16 @@ class ExpandWindowPop extends React.Component {
 																	<img src={notesblank_img} alt="notesflagged..." />
 																)
 															}
+																<span className="fixed-hov-ob">notes Board</span>
 															<span>{data.messages || ""}</span>
 														</button>
 													</div>
 
 													{writeAccess && (<div className='cl13-fl' onClick={() => this.openChapterWindow(id, scene_id)}>
-														<button className='btn'><img src={tearup_img} alt="BeatsModeimg..." /></button>
+														<button className='btn'><img src={tearup_img} alt="BeatsModeimg..." />
+                             <span className="fixed-hov-ob">Pop out as new Window</span>
+														</button>
+
 													</div>)}
 
 													<div className='br-dt'>
@@ -502,7 +507,7 @@ class ExpandWindowPop extends React.Component {
 												</div>
 											</div>
 
-											
+
 										</div>
 									</div>
 								</div>
@@ -517,7 +522,7 @@ class ExpandWindowPop extends React.Component {
 											<div className='txt-pd ch-size'>
 												<textarea ref={(node) => this.setTextareaWrapperRef("summary", scene_id, node)}
 													rows="1"
-													className={`txt-rw2`} name="summary" value={data.summary || ""} 
+													className={`txt-rw2`} name="summary" value={data.summary || ""}
 													onChange={this.handleChange(id, scene_id)}
 												/>
 											</div>
@@ -530,8 +535,8 @@ class ExpandWindowPop extends React.Component {
 									<button className='icn' onClick={() => this.saveSummery(true)}>Cancel</button>
 								</div>
 
-								<NotesPop 
-									open={notesPop} 
+								<NotesPop
+									open={notesPop}
 									closeModal={this.closeNotes}
 									notesOf={notesOf}
 								/>
@@ -554,22 +559,22 @@ class ExpandWindowPop extends React.Component {
 											        placeholder="Chapter Title"
 												/>
 											</div>
-				                         
+
 											<div className='cl2'>
 												<div className='cl6'>
 													<span>{numberWithCommas(data.count || 0)}</span>
 												</div>
-											
+
 											</div>
-											
+
 					                        <div className='cl35'>
 												<div className='cl5'>
 													<div className='cl7'>
 														<img src={pulse_img} alt="pulse..." />
 											    	</div>
-													<span className='txt-pd ch-size'> 
+													<span className='txt-pd ch-size'>
 														<input
-															className={`cptxt15`} name="pulse" value={data.pulse || ""} 
+															className={`cptxt15`} name="pulse" value={data.pulse || ""}
 															onChange={this.handleChange(id)}
 												            rows="1"
 												            maxLength="50"
@@ -578,7 +583,7 @@ class ExpandWindowPop extends React.Component {
 													</span>
 												</div>
 
-												
+
 											  	<div className='cl3-grid'>
 													<div className='cl3-nn'>
 														<button className='btn' onClick={() => this.openExpButtons(id)}>
@@ -589,6 +594,7 @@ class ExpandWindowPop extends React.Component {
 																	<img src={chapter_selected_img} alt="BeatsModeimg..." />
 																)
 															}
+															<span className="fixed-hov-ob">Expand Beats Summary</span>
 														</button>
 
 														{
@@ -628,11 +634,14 @@ class ExpandWindowPop extends React.Component {
 																	<img src={notesblank_img} alt="notesflagged..." />
 																)
 															}
+															<span className="fixed-hov-ob">notes Board</span>
 														</button>
 													</div>
 													{writeAccess && (
 														<div className='cl13-fl' onClick={() => this.openChapterWindow(id)}>
-															<button className='btn'><img src={tearup_img} alt="BeatsModeimg..." /></button>
+															<button className='btn'><img src={tearup_img} alt="BeatsModeimg..." />
+																<span className="fixed-hov-ob">Pop out as new Window</span>
+															</button>
 														</div>
 													)}
 
@@ -644,7 +653,7 @@ class ExpandWindowPop extends React.Component {
 											  	</div>
 											</div>
 										</div>
-									</div> 
+									</div>
 								</div>
 
 								{
@@ -656,7 +665,7 @@ class ExpandWindowPop extends React.Component {
 
 											<div className='txt-pd ch-size'>
 												<textarea ref={(node) => this.setTextareaWrapperRef("summary", id, node)}
-													className={`txt-rw2`} name="summary" value={data.summary || ""} 
+													className={`txt-rw2`} name="summary" value={data.summary || ""}
 													onChange={this.handleChange(id)}
 													rows="2"
 												/>
@@ -670,8 +679,8 @@ class ExpandWindowPop extends React.Component {
 									<button className='icn' onClick={() => this.saveSummery(true)}>Cancel</button>
 								</div>
 
-								<NotesPop 
-									open={notesPop} 
+								<NotesPop
+									open={notesPop}
 									closeModal={this.closeNotes}
 									notesOf={notesOf}
 								/>
